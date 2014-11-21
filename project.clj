@@ -6,11 +6,11 @@
   :license {:name "The MIT License (MIT)"
             :url "http://opensource.org/licenses/MIT"
             :comments "Copyright (c) 2014 Unbounce Marketing Solutions Inc."}
-  
   :profiles {:dev {:plugins [[lein-kibit "0.0.8"]
-                             [jonase/eastwood "0.1.4"]] 
+                             [jonase/eastwood "0.1.4"]]
                    :dependencies [[clj-http "1.0.1"]
                                   [ring/ring-jetty-adapter ~ring-version]]}}
 
   :dependencies [[org.clojure/clojure "1.6.0"]
+                 [prismatic/schema "0.3.3"]
                  [ring/ring-core ~ring-version]])
