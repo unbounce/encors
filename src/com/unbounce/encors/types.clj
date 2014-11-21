@@ -1,7 +1,6 @@
 (ns com.unbounce.encors.types
   (:require [schema.core :as s]))
 
-
 (deftype CorsPolicy
     [allowed-origins
      allowed-methods
@@ -40,3 +39,9 @@
 (defn create-cors-policy [& args-list]
   (let [args (apply hash-map args-list)]
     (map->CorsPolicy args)))
+
+(def simple-methods #{:get :head :post})
+
+(def simple-headers #{"Accept" "Accept-Language" "Content-Language" "Content-Type"})
+
+(def simple-headers-wo-content-type #{"Accept" "Accept-Language" "Content-Language"})
