@@ -31,12 +31,12 @@
 
 ;; Support
 
-(def ^:const valid-origin "test.encors.net")
-(def ^:const valid-methods "GET, POST")
-(def ^:const valid-headers "Content-Type")
-(def ^:const valid-credentials "true")
+(def ^:const allowed-origin "test.encors.net")
+(def ^:const allowed-methods "GET, POST")
+(def ^:const allowed-headers "Content-Type")
+(def ^:const expose-headers "X-Safe-To-Expose, X-Safe-To-Expose-Too")
 
-(def ^:const invalid-origin "not.cool.io")
+(def ^:const unallowed-origin "not.cool.io")
 
 (defn- assert-no-cors-response [res]
   (are [h] (nil? (->> res :headers h))
@@ -45,12 +45,36 @@
        :Access-Control-Allow-Headers
        :Access-Control-Allow-Credentials))
 
+(defn- assert-partial-cors-preflight-response [res]
+  (are [h e] (= (->> res :headers h) e)
+        :Access-Control-Allow-Origin allowed-origin
+        :Access-Control-Allow-Methods allowed-methods
+        :Access-Control-Allow-Headers allowed-headers
+        :Access-Control-Allow-Credentials "false"))
+
 (defn- assert-full-cors-preflight-response [res]
   (are [h e] (= (->> res :headers h) e)
-        :Access-Control-Allow-Origin valid-origin
-        :Access-Control-Allow-Methods valid-methods
-        :Access-Control-Allow-Headers valid-headers
-        :Access-Control-Allow-Credentials valid-credentials))
+        :Access-Control-Allow-Origin allowed-origin
+        :Access-Control-Allow-Methods allowed-methods
+        :Access-Control-Allow-Headers allowed-headers
+        :Access-Control-Allow-Credentials "true"
+        :Access-Control-Expose-Headers expose-headers
+        :Access-Control-Max-Age "1234"))
+
+(defn- assert-partial-cors-response [res]
+  (are [h e] (= (->> res :headers h) e)
+        :Access-Control-Allow-Origin allowed-origin
+        :Access-Control-Allow-Methods allowed-methods
+        :Access-Control-Allow-Headers allowed-headers
+        :Access-Control-Allow-Credentials "false"))
+
+(defn- assert-full-cors-response [res]
+  (are [h e] (= (->> res :headers h) e)
+        :Access-Control-Allow-Origin allowed-origin
+        :Access-Control-Allow-Methods allowed-methods
+        :Access-Control-Allow-Headers allowed-headers
+        :Access-Control-Allow-Credentials "true"
+        :Access-Control-Expose-Headers expose-headers))
 
 (defn- assert-response [res expected-status cors-assertions-fn]
   (is (= (:status res) expected-status))
@@ -75,8 +99,11 @@
 (deftest app-features-no-cors
   (test-app-features assert-no-cors-response))
 
+(deftest app-features-partial-cors
+  (test-app-features assert-partial-cors-response))
+
 (deftest app-features-full-cors
-  (test-app-features assert-full-cors-preflight-response))
+  (test-app-features assert-full-cors-response))
 
 ;; CORS tests
 
@@ -88,22 +115,32 @@
 
 (deftest valid-preflight-no-cors
   (testing "Valid preflight"
-    (let [res (send-preflight-request valid-origin)]
+    (let [res (send-preflight-request allowed-origin)]
              (assert-response res 404 assert-no-cors-response))))
 
 (deftest invalid-preflight-no-cors
   (testing "Invalid preflight"
-    (let [res (send-preflight-request invalid-origin)]
+    (let [res (send-preflight-request unallowed-origin)]
+             (assert-response res 404 assert-no-cors-response))))
+
+(deftest valid-preflight-partial-cors
+  (testing "Valid preflight"
+    (let [res (send-preflight-request allowed-origin)]
+             (assert-response res 200 assert-partial-cors-preflight-response))))
+
+(deftest invalid-preflight-partial-cors
+  (testing "Invalid preflight"
+    (let [res (send-preflight-request unallowed-origin)]
              (assert-response res 404 assert-no-cors-response))))
 
 (deftest valid-preflight-full-cors
   (testing "Valid preflight"
-    (let [res (send-preflight-request valid-origin)]
+    (let [res (send-preflight-request allowed-origin)]
              (assert-response res 200 assert-full-cors-preflight-response))))
 
 (deftest invalid-preflight-full-cors
   (testing "Invalid preflight"
-    (let [res (send-preflight-request invalid-origin)]
+    (let [res (send-preflight-request unallowed-origin)]
              (assert-response res 400 assert-no-cors-response))))
 
 ;; Jetty, tests and SUT orchestration
@@ -117,6 +154,13 @@
       (app-features-no-cors)
       (valid-preflight-no-cors)
       (invalid-preflight-no-cors))
+
+    ;; Test the app, with CORS middleware (partial config)
+    (testing "Partial CORS policy"
+      (reset! sut app)
+      (app-features-partial-cors)
+      (valid-preflight-partial-cors)
+      (invalid-preflight-partial-cors))
 
     ;; Test the app, with CORS middleware (full config)
     (testing "Full CORS policy"
