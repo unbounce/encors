@@ -1,6 +1,6 @@
-# corsé
+# encors
 
-A [CORS](http://www.w3.org/TR/cors/) library for ring.
+Yet again another [CORS](http://www.w3.org/TR/cors/) library for ring.
 
 ## Usage
 
