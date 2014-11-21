@@ -10,16 +10,18 @@
      max-age
      allow-credentials?
      origin-varies?
+     require-origin?
      ignore-failures?])
 
 (def CorsPolicySchema
-  {(s/required-key :allowed-origins)    (s/maybe [s/Str])
-   (s/required-key :allowed-methods)    [(s/enum [:get :post :put :options])]
-   (s/required-key :request-headers)    [s/Str]
-   (s/required-key :exposed-headers)    (s/maybe [s/Str])
+  {(s/required-key :allowed-origins)    (s/maybe #{s/Str})
+   (s/required-key :allowed-methods)    #{(s/enum [:get :post :put :options])}
+   (s/required-key :request-headers)    #{s/Str}
+   (s/required-key :exposed-headers)    (s/maybe {s/Str s/Str})
    (s/required-key :max-age)            (s/maybe s/Int)
    (s/required-key :allow-credentials?) s/Bool
    (s/required-key :origin-varies?)     s/Bool
+   (s/required-key :require-origin?)    s/Bool
    (s/required-key :ignore-failures?)   s/Bool})
 
 

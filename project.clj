@@ -14,5 +14,6 @@
                                   [compojure "1.2.1"]]}}
 
   :dependencies [[org.clojure/clojure "1.6.0"]
+                 [org.clojure/core.match "0.2.1"]
                  [prismatic/schema "0.3.3"]
                  [ring/ring-core ~ring-version]])
