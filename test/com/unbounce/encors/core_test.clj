@@ -69,13 +69,13 @@
       (is (= (cors-preflight-check-method
               {:headers {"Access-Control-Request-Method" "delete"}}
               policy)
-             [:left (str "Method requested in Access-Control-Request-Method of "
-                         "CORS request is not supported; requested: delete; "
-                         "supported are get, head, post")]))))
+             [:left [(str "Method requested in Access-Control-Request-Method of "
+                           "CORS request is not supported; requested: delete; "
+                           "supported are get, head, post")]]))))
 
   (testing "Access-Control-Request-Method header is missing"
     (let [method :get
           policy (map->CorsPolicy default-cors-options)]
       (is (= (cors-preflight-check-method {:headers {}} policy)
-             [:left (str "Access-Control-Request-Method header is missing in CORS "
-                         "preflight request")])))))
+             [:left [(str "Access-Control-Request-Method header is missing in CORS "
+                           "preflight request")]])))))
