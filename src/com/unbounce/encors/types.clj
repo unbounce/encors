@@ -34,6 +34,7 @@
                (:max-age args)
                (:allow-credentials? args)
                (:origin-varies? args)
+               (:require-origin? args)
                (:ignore-failures? args)))
 
 (defn create-cors-policy [& args-list]
