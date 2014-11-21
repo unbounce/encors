@@ -38,7 +38,5 @@
                (:ignore-failures? args)))
 
 (defn create-cors-policy [& args-list]
-  (let [args (merge {:allow-credentials? true
-                     :ignore-failures? false}
-                    (apply hash-map args-list))]
+  (let [args (apply hash-map args-list)]
     (map->CorsPolicy args)))
