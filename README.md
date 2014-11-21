@@ -1,6 +1,6 @@
 # corsé
 
-A CORS library for ring.
+A [CORS](http://www.w3.org/TR/cors/) library for ring.
 
 ## Usage
 
