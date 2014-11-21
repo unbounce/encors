@@ -23,16 +23,19 @@
    (s/required-key :ignore-failures?)   s/Bool})
 
 
+(defn map->CorsPolicy [args]
+  (s/validate CorsPolicySchema args)
+  (CorsPolicy. (:allowed-origins args)
+               (:allowed-methods args)
+               (:request-headers args)
+               (:exposed-headers args)
+               (:max-age args)
+               (:allow-credentials? args)
+               (:origin-varies? args)
+               (:ignore-failures? args)))
+
 (defn create-cors-policy [& args-list]
   (let [args (merge {:allow-credentials? true
                      :ignore-failures? false}
                     (apply hash-map args-list))]
-    (s/validate CorsPolicySchema args)
-    (CorsPolicy. (:allowed-origins args)
-                 (:allowed-methods args)
-                 (:request-headers args)
-                 (:exposed-headers args)
-                 (:max-age args)
-                 (:allow-credentials? args)
-                 (:origin-varies? args)
-                 (:ignore-failures? args))))
+    (map->CorsPolicy args)))
