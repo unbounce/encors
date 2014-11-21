@@ -72,3 +72,53 @@
              cors-preflight-check-method
              ;; cors-preflight-check-request-headers
              ])))
+
+(defn apply-cors-policy [{:keys [req app origin cors-policy]}]
+  (let [allowed-origins (.allowed-origins cors-policy)
+        fail-or-ignore (fn fail [err-msg]
+                         (if (.ignore-failures? cors-policy)
+                           (app req)
+                           (cors-failure err-msg)))]
+
+    (cond
+     ;;
+     (and allowed-origins
+          (contains? allowed-origins origin))
+     ;;
+     (if (= "OPTIONS" (get "method" req))
+       (let [e-preflight-headers (cors-preflight-headers req cors-policy)]
+         (match e-preflight-headers
+                [:left err-msg] (fail-or-ignore err-msg)
+                [:right preflight-headers]
+                (let [common-headers (cors-common-headers origin cors-policy)
+                      all-headers (merge common-headers preflight-headers)]
+                  {:status 204
+                   :headers all-headers
+                   :body ""})))
+       ;; else
+       (fail-or-ignore "pending implementation"))
+
+     ;;
+     :else
+     (fail-or-ignore "pending implementation"))))
+
+(defn wrap-cors [get-policy-for-req app]
+  (fn wrap-cors-handler [req]
+    (let [cors-policy     (get-policy-for-req req)
+          allowed-origins (.allowed-origins cors-policy)
+          origin          (get (:headers req) "origin")]
+
+      (cond
+       ;; halt & fail
+       (and origin (.require-origin? cors-policy))
+       (cors-failure "Origin header is missing")
+
+       ;; continue with inner app
+       (not (.require-origin? cors-policy))
+       (app req)
+
+       :else ;; perform cors validation
+       (apply-cors-policy {:req req
+                           :app app
+                           :origin origin
+                           :cors-policy cors-policy})))))
