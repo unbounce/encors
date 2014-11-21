@@ -5,8 +5,6 @@
             [compojure.core :refer :all]
             [compojure.route :as route]))
 
-(def ^:const valid-origin "test.encors.net")
-
 (def ^:dynamic sut (atom nil))
 
 (def http-port
@@ -33,12 +31,26 @@
 
 ;; Support
 
-(defn- assert-response-no-cors [res]
+(def ^:const valid-origin "test.encors.net")
+(def ^:const valid-methods "GET,POST")
+(def ^:const valid-headers "Content-Type")
+(def ^:const valid-credentials "true")
+
+(def ^:const invalid-origin "not.cool.io")
+
+(defn- assert-no-cors-response [res]
   (are [h] (nil? (->> res :headers h))
        :Access-Control-Allow-Origin
        :Access-Control-Allow-Methods
        :Access-Control-Allow-Headers
        :Access-Control-Allow-Credentials))
+
+(defn- assert-full-cors-preflight-response [res]
+  (are [h e] (= (->> res :headers h) e)
+        :Access-Control-Allow-Origin valid-origin
+        :Access-Control-Allow-Methods valid-methods
+        :Access-Control-Allow-Headers valid-headers
+        :Access-Control-Allow-Credentials valid-credentials))
 
 (defn- assert-response [res expected-status cors-assertions-fn]
   (is (= (:status res) expected-status))
@@ -56,20 +68,38 @@
       (assert-response root-res 404 cors-assertions-fn))))    
 
 (deftest app-features-no-cors
-  (test-app-features assert-response-no-cors))
+  (test-app-features assert-no-cors-response))
+  
+(deftest app-features-full-cors
+  (test-app-features assert-full-cors-preflight-response))
   
 ;; CORS tests 
 
-(defn- send-valid-preflight-request []
- (testing "Valid preflight"
+(defn- send-preflight-request [origin]
 	 (http/options (uri "/")
 	               {:headers {:Access-Control-Request-Method "POST"
-	                          :Origin valid-origin}
-	                :throw-exceptions false})))
+	                          :Origin origin}
+	                :throw-exceptions false}))
 
 (deftest valid-preflight-no-cors
-  (let [res (send-valid-preflight-request)]
-     (assert-response res 404 assert-response-no-cors)))
+  (testing "Valid preflight"
+    (let [res (send-preflight-request valid-origin)]
+	     (assert-response res 404 assert-no-cors-response))))
+
+(deftest invalid-preflight-no-cors
+  (testing "Invalid preflight"
+    (let [res (send-preflight-request invalid-origin)]
+	     (assert-response res 404 assert-no-cors-response))))
+
+(deftest valid-preflight-full-cors
+  (testing "Valid preflight"
+    (let [res (send-preflight-request valid-origin)]
+	     (assert-response res 200 assert-full-cors-preflight-response))))
+
+(deftest invalid-preflight-full-cors
+  (testing "Invalid preflight"
+    (let [res (send-preflight-request invalid-origin)]
+	     (assert-response res 400 assert-no-cors-response))))
 
 ;; Jetty, tests and SUT orchestration
 
@@ -80,8 +110,14 @@
     (testing "No CORS policy"
       (reset! sut app)
       (app-features-no-cors)
-      (valid-preflight-no-cors))
+      (valid-preflight-no-cors)
+      (invalid-preflight-no-cors))
     
-    ;; TODO add more tests
+    ;; Test the app, with CORS middleware (full config)
+    (testing "Full CORS policy"
+      (reset! sut app)
+      (app-features-full-cors)
+      (valid-preflight-full-cors)
+      (invalid-preflight-full-cors))
     
     (.stop jetty)))
