@@ -8,6 +8,8 @@
 
 Yet again another [CORS](http://www.w3.org/TR/cors/) library for ring.
 
+[![Clojars Project](http://clojars.org/com.unbounce/encors/latest-version.svg)](http://clojars.org/com.unbounce/encors)
+
 ## Usage
 
 TBD
