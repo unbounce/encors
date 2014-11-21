@@ -53,3 +53,29 @@
     (let [policy (map->CorsPolicy default-cors-options)]
       (is (= (cors-preflight-check-max-age {:headers {}} policy))
           [:right {}]))))
+
+(deftest cors-preflight-check-method-test
+  (testing "Access-Control-Request-Method header has a method allowed by the policy"
+    (let [method :get
+          policy (map->CorsPolicy default-cors-options)]
+      (is (= (cors-preflight-check-method
+              {:headers {"Access-Control-Request-Method" "get"}}
+              policy)
+             [:right {"Access-Control-Allow-Methods" "get, head, post"}]))))
+
+  (testing "Access-Control-Request-Method header has a method not allowed by the policy"
+    (let [method :delete
+          policy (map->CorsPolicy default-cors-options)]
+      (is (= (cors-preflight-check-method
+              {:headers {"Access-Control-Request-Method" "delete"}}
+              policy)
+             [:left (str "Method requested in Access-Control-Request-Method of "
+                         "CORS request is not supported; requested: delete; "
+                         "supported are get, head, post")]))))
+
+  (testing "Access-Control-Request-Method header is missing"
+    (let [method :get
+          policy (map->CorsPolicy default-cors-options)]
+      (is (= (cors-preflight-check-method {:headers {}} policy)
+             [:left (str "Access-Control-Request-Method header is missing in CORS "
+                         "preflight request")])))))
