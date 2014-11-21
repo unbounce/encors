@@ -10,7 +10,8 @@
   :profiles {:dev {:plugins [[lein-kibit "0.0.8"]
                              [jonase/eastwood "0.1.4"]]
                    :dependencies [[clj-http "1.0.1"]
-                                  [ring/ring-jetty-adapter ~ring-version]]}}
+                                  [ring/ring-jetty-adapter ~ring-version]
+                                  [compojure "1.2.1"]]}}
 
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [prismatic/schema "0.3.3"]
