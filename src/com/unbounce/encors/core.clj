@@ -19,3 +19,11 @@
 
     [origin true _]  {"Access-Control-Allow-Origin" origin
                       "Access-Control-Allow-Credentials" "true"}))
+
+;; Request -> CorsPolicy -> [:left ErrorMsg] | [:right Headers]
+(defn cors-preflight-check-max-age
+  [_ cors-policy]
+  (if-let [max-age (.max-age cors-policy)]
+    [:right {"Access-Control-Max-Age" (str max-age)}]
+    ;; else
+    [:right {}]))
