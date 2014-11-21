@@ -1,4 +1,4 @@
-(ns corse.core)
+(ns com.unbounce.encors.core)
 
 (defn foo
   "I don't do a whole lot."
