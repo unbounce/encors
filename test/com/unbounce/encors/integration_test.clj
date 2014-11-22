@@ -1,5 +1,8 @@
 (ns com.unbounce.encors.integration-test
-  (:require [clojure.test :refer :all]
+  (:require [com.unbounce.encors.core :as cors]
+            [com.unbounce.encors.types :refer [map->CorsPolicy]]
+            [clojure.string :as str]
+            [clojure.test :refer :all]
             [clj-http.client :as http]
             [ring.adapter.jetty :refer [run-jetty]]
             [compojure.core :refer :all]
@@ -32,11 +35,35 @@
 ;; Support
 
 (def ^:const allowed-origin "test.encors.net")
-(def ^:const allowed-methods "GET, POST")
+; FIXME remove downcasing
+(def ^:const allowed-methods (str/lower-case "GET, POST"))
 (def ^:const allowed-headers "Content-Type")
 (def ^:const expose-headers "X-Safe-To-Expose, X-Safe-To-Expose-Too")
 
 (def ^:const unallowed-origin "not.cool.io")
+
+(def partial-cors-options
+  {:allowed-origins allowed-origin
+   :allowed-methods (mapv keyword (set (str/split allowed-methods #", ")))
+   :exposed-headers #{}
+   :request-headers #{allowed-headers}
+   :max-age nil
+   :allow-credentials? false
+   :origin-varies? true
+   :require-origin? true
+   :ignore-failures? false})
+
+(def partial-cors-policy
+  (map->CorsPolicy partial-cors-options))
+
+(def full-cors-options
+  (merge partial-cors-options
+         {:exposed-headers (set (str/split allowed-methods #", "))
+          :max-age 1234
+          :allow-credentials? true}))
+
+(def full-cors-policy
+  (map->CorsPolicy full-cors-options))
 
 (defn- assert-no-cors-response [res]
   (are [h] (nil? (->> res :headers h))
@@ -157,14 +184,16 @@
 
     ;; Test the app, with CORS middleware (partial config)
     (testing "Partial CORS policy"
-      (reset! sut app)
+      (reset! sut (->> app
+                    (cors/wrap-cors (constantly partial-cors-policy)))
       (app-features-partial-cors)
       (valid-preflight-partial-cors)
       (invalid-preflight-partial-cors))
 
     ;; Test the app, with CORS middleware (full config)
     (testing "Full CORS policy"
-      (reset! sut app)
+      (reset! sut (->> app
+                    (cors/wrap-cors (constantly full-cors-policy))))
       (app-features-full-cors)
       (valid-preflight-full-cors)
       (invalid-preflight-full-cors))
