@@ -25,9 +25,7 @@
 
 
 (defn map->CorsPolicy [args]
-  (s/validate CorsPolicySchema
-              (update-in args [:max-age] #(when-not (nil? %)
-                                            (Integer/parseInt %))))
+  (s/validate CorsPolicySchema args)
   (CorsPolicy. (:allowed-origins args)
                (:allowed-methods args)
                (:request-headers args)
