@@ -130,18 +130,18 @@
 
      ;;
      :else
-     (fail-or-ignore (str "Unsupported origin: " origin)))))
+     (fail-or-ignore (str "Unsupported origin: " (pr-str origin))))))
 
 
 (defn wrap-cors [get-policy-for-req app]
   (fn wrap-cors-handler [req]
     (let [cors-policy     (get-policy-for-req req)
           allowed-origins (.allowed-origins cors-policy)
-          origin          (get (:headers req) "origin")]
+          origin          (get (:headers req) "Origin")]
 
       (cond
        ;; halt & fail
-       (and origin (.require-origin? cors-policy))
+       (and (nil? origin) (.require-origin? cors-policy))
        (cors-failure "Origin header is missing")
 
        ;; continue with inner app
