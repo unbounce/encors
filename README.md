@@ -29,7 +29,7 @@ Receives a map that _must_ have the following keys:
   - `:allowed-methods`
 
     A set that specifies the HTTP methods allowed in CORS requests.
-    (valid values are: `:get`, `:post`, `:put` and `:options`)
+    (valid values are [here](https://github.com/unbounce/encors/blob/master/src/com/unbounce/encors/types.clj#L17))
 
   - `:request-headers`
 
@@ -42,7 +42,7 @@ Receives a map that _must_ have the following keys:
     A set of HTTP header field names that will be exposed on the
     client (can be nil).
 
-  - `:max-age
+  - `:max-age`
 
     Number of seconds that the response may be cached by the client
     (can be nil).
@@ -85,13 +85,13 @@ Receives a map that _must_ have the following keys:
 
 Receives a 2 arguments:
 
-  1) A function that recieves a ring request and returns a CORS
+  1) A function that receives a ring request and returns a CORS
      policy. This function needs to be implemented by the caller, and
      the returned policy needs to be the result of a `map->CorsPolicy`
      invocation.
 
 
-  2) The ring app being wrapped
+  2) The ring app being wrapped.
 
 
 Example:
