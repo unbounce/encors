@@ -8,7 +8,7 @@
             :comments "Copyright (c) 2014 Unbounce Marketing Solutions Inc."}
 
   :profiles {:dev {:plugins [[lein-kibit "0.0.8"]
-                             [jonase/eastwood "0.1.4"]]
+                             [jonase/eastwood "0.2.0"]]
                    :dependencies [[clj-http "1.0.1"]
                                   [ring/ring-jetty-adapter ~ring-version]
                                   [compojure "1.2.1"]]}}

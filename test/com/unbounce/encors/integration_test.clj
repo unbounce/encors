@@ -8,7 +8,9 @@
             [compojure.core :refer :all]
             [compojure.route :as route]))
 
-(def ^:const debug false)
+(def debug
+  (read-string
+    (System/getProperty "debug" "false")))
 
 (def ^:dynamic sut (atom nil))
 
