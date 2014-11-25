@@ -8,6 +8,7 @@
 
 Yet again another [CORS](http://www.w3.org/TR/cors/) library for ring.
 
+[![Build Status](https://travis-ci.org/unbounce/encors.svg?branch=master)](https://travis-ci.org/unbounce/encors)
 [![Clojars Project](http://clojars.org/com.unbounce/encors/latest-version.svg)](http://clojars.org/com.unbounce/encors)
 
 ## Usage
