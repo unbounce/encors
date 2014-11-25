@@ -34,17 +34,16 @@
 
 ;; Support
 
-(def ^:const allowed-origin "test.encors.net")
-; FIXME remove downcasing
-(def ^:const allowed-methods (str/lower-case "GET, POST"))
+(def ^:const allowed-origin  "test.encors.net")
+(def ^:const allowed-methods "GET, POST")
 (def ^:const allowed-headers "Content-Type")
-(def ^:const expose-headers "X-Safe-To-Expose, X-Safe-To-Expose-Too")
-
+(def ^:const expose-headers  "X-Safe-To-Expose, X-Safe-To-Expose-Too")
 (def ^:const unallowed-origin "not.cool.io")
 
 (def partial-cors-options
-  {:allowed-origins allowed-origin
-   :allowed-methods (mapv keyword (set (str/split allowed-methods #", ")))
+  {:allowed-origins #{allowed-origin}
+   :allowed-methods (set (mapv (comp keyword str/lower-case)
+                               (str/split allowed-methods #", ")))
    :exposed-headers #{}
    :request-headers #{allowed-headers}
    :max-age nil
@@ -66,42 +65,42 @@
   (map->CorsPolicy full-cors-options))
 
 (defn- assert-no-cors-response [res]
-  (are [h] (nil? (->> res :headers h))
-       :Access-Control-Allow-Origin
-       :Access-Control-Allow-Methods
-       :Access-Control-Allow-Headers
-       :Access-Control-Allow-Credentials))
+  (are [header] (nil? (-> res :headers (get header)))
+       "Access-Control-Allow-Origin"
+       "Access-Control-Allow-Methods"
+       "Access-Control-Allow-Headers"
+       "Access-Control-Allow-Credentials"))
 
 (defn- assert-partial-cors-preflight-response [res]
-  (are [h e] (= (->> res :headers h) e)
-        :Access-Control-Allow-Origin allowed-origin
-        :Access-Control-Allow-Methods allowed-methods
-        :Access-Control-Allow-Headers allowed-headers
-        :Access-Control-Allow-Credentials "false"))
+  (are [header expected] (= (-> res :headers (get header)) expected)
+        "Access-Control-Allow-Origin"      allowed-origin
+        "Access-Control-Allow-Methods"     allowed-methods
+        "Access-Control-Allow-Headers"     allowed-headers
+        "Access-Control-Allow-Credentials" "false"))
 
 (defn- assert-full-cors-preflight-response [res]
-  (are [h e] (= (->> res :headers h) e)
-        :Access-Control-Allow-Origin allowed-origin
-        :Access-Control-Allow-Methods allowed-methods
-        :Access-Control-Allow-Headers allowed-headers
-        :Access-Control-Allow-Credentials "true"
-        :Access-Control-Expose-Headers expose-headers
-        :Access-Control-Max-Age "1234"))
+  (are [header expected] (= (-> res :headers (get header)) expected)
+        "Access-Control-Allow-Origin" allowed-origin
+        "Access-Control-Allow-Methods" allowed-methods
+        "Access-Control-Allow-Headers" allowed-headers
+        "Access-Control-Allow-Credentials" "true"
+        "Access-Control-Expose-Headers" expose-headers
+        "Access-Control-Max-Age" "1234"))
 
 (defn- assert-partial-cors-response [res]
-  (are [h e] (= (->> res :headers h) e)
-        :Access-Control-Allow-Origin allowed-origin
-        :Access-Control-Allow-Methods allowed-methods
-        :Access-Control-Allow-Headers allowed-headers
-        :Access-Control-Allow-Credentials "false"))
+  (are [header expected] (= (-> res :headers (get header)) expected)
+        "Access-Control-Allow-Origin" allowed-origin
+        "Access-Control-Allow-Methods" allowed-methods
+        "Access-Control-Allow-Headers" allowed-headers
+        "Access-Control-Allow-Credentials" "false"))
 
 (defn- assert-full-cors-response [res]
-  (are [h e] (= (->> res :headers h) e)
-        :Access-Control-Allow-Origin allowed-origin
-        :Access-Control-Allow-Methods allowed-methods
-        :Access-Control-Allow-Headers allowed-headers
-        :Access-Control-Allow-Credentials "true"
-        :Access-Control-Expose-Headers expose-headers))
+  (are [header expected] (= (-> res :headers (get header)) expected)
+        "Access-Control-Allow-Origin" allowed-origin
+        "Access-Control-Allow-Methods" allowed-methods
+        "Access-Control-Allow-Headers" allowed-headers
+        "Access-Control-Allow-Credentials" "true"
+        "Access-Control-Expose-Headers" expose-headers))
 
 (defn- assert-response [res expected-status cors-assertions-fn]
   (is (= (:status res) expected-status))
@@ -111,16 +110,30 @@
 
 (defn- test-app-features [cors-assertions-fn]
   (testing "Application features"
-    (let [get-res (http/get (uri "/get")
+    (let [debug-res (fn [req-uri res]
+                      (println "====> DEBUG for " req-uri ": \n"
+                               "\n"
+                               "- " (:status res) "\n"
+                               "- " (pr-str (:headers res)) "\n"
+                               "- " (:body res)))
+          get-res (http/get (uri "/get")
                             {:throw-exceptions false})
           post-res (http/post (uri "/post")
                               {:headers {:Content-Type "application/json"}
                                :body "{\"data\":\"fake\"}"
                                :throw-exceptions false})
           root-res (http/get (uri "/")
-                             {:throw-exceptions false})]
+                             {:throw-exceptions false})
+          ]
+
+
+      (debug-res "get-res" get-res)
       (assert-response get-res 200 cors-assertions-fn)
+
+      (debug-res "post-res" get-res)
       (assert-response post-res 201 cors-assertions-fn)
+
+      (debug-res "root-res" get-res)
       (assert-response root-res 404 cors-assertions-fn))))
 
 (deftest app-features-no-cors
@@ -135,10 +148,10 @@
 ;; CORS tests
 
 (defn- send-preflight-request [origin]
-         (http/options (uri "/")
-                       {:headers {:Access-Control-Request-Method "POST"
-                                  :Origin origin}
-                        :throw-exceptions false}))
+  (http/options (uri "/")
+                {:headers {:Access-Control-Request-Method "POST"
+                           :Origin origin}
+                 :throw-exceptions false}))
 
 (deftest valid-preflight-no-cors
   (testing "Valid preflight"
@@ -184,16 +197,16 @@
 
     ;; Test the app, with CORS middleware (partial config)
     (testing "Partial CORS policy"
-      (reset! sut (->> app
-                    (cors/wrap-cors (constantly partial-cors-policy)))
+      (reset! sut
+              (cors/wrap-cors (constantly partial-cors-policy) app))
       (app-features-partial-cors)
       (valid-preflight-partial-cors)
       (invalid-preflight-partial-cors))
 
     ;; Test the app, with CORS middleware (full config)
     (testing "Full CORS policy"
-      (reset! sut (->> app
-                    (cors/wrap-cors (constantly full-cors-policy))))
+      (reset! sut
+              (cors/wrap-cors (constantly full-cors-policy) app))
       (app-features-full-cors)
       (valid-preflight-full-cors)
       (invalid-preflight-full-cors))
