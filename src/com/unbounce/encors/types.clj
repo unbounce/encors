@@ -36,9 +36,6 @@
                (:require-origin? args)
                (:ignore-failures? args)))
 
-(defn create-cors-policy [& args-list]
-  (let [args (apply hash-map args-list)]
-    (map->CorsPolicy args)))
 
 (def simple-methods #{:get :head :post})
 
