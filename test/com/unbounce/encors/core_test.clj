@@ -46,11 +46,11 @@
 
 (deftest cors-preflight-check-max-age-test
   (testing "when max-age is present"
-    (let [max-age "365"
+    (let [max-age 365
           policy (map->CorsPolicy (merge default-cors-options
-                                         {:max-age max-age}))]
+                                         {:max-age 365}))]
       (is (= (cors-preflight-check-max-age {:headers {}} policy)
-             [:right {"Access-Control-Max-Age" max-age}]))))
+             [:right {"Access-Control-Max-Age" (str max-age)}]))))
   (testing "when max-age is not present"
     (let [policy (map->CorsPolicy default-cors-options)]
       (is (= (cors-preflight-check-max-age {:headers {}} policy))
@@ -63,7 +63,7 @@
       (is (= (cors-preflight-check-method
               {:headers {"Access-Control-Request-Method" "GET"}}
               policy)
-             [:right {"Access-Control-Allow-Methods" "get, head, post"}]))))
+             [:right {"Access-Control-Allow-Methods" "HEAD, POST, GET"}]))))
 
   (testing "Access-Control-Request-Method header has a method not allowed by the policy"
     (let [method :delete
@@ -72,15 +72,15 @@
               {:headers {"Access-Control-Request-Method" "DELETE"}}
               policy)
              [:left [(str "Method requested in Access-Control-Request-Method of "
-                           "CORS request is not supported; requested: delete; "
-                           "supported are get, head, post")]]))))
+                           "CORS request is not supported; requested: `DELETE'; "
+                           "supported are HEAD, POST, GET.")]]))))
 
   (testing "Access-Control-Request-Method header is missing"
     (let [method :get
           policy (map->CorsPolicy default-cors-options)]
       (is (= (cors-preflight-check-method {:headers {}} policy)
              [:left [(str "Access-Control-Request-Method header is missing in CORS "
-                           "preflight request")]])))))
+                           "preflight request.")]])))))
 
 (deftest cors-preflight-check-request-headers-test
   (let [policy (map->CorsPolicy (merge default-cors-options
@@ -103,3 +103,21 @@
              [:right {"Access-Control-Allow-Headers"
                       (set/union #{"X-Safe-To-Expose"}
                                  types/simple-headers-wo-content-type)}])))))
+
+(deftest cors-preflight-headers-test
+  (testing "With a request that complies with policy"
+    (let [policy (map->CorsPolicy (merge default-cors-options
+                                         {:max-age 365
+                                          :allow-credentials? true
+                                          :request-headers #{"X-Cool-Header"}
+                                          :allowed-methods #{:get}}))]
+      (is (= (cors-preflight-headers {:headers {"Access-Control-Request-Headers"
+                                                "X-Cool-Header"
+                                                "Access-Control-Request-Method"
+                                                "GET"}}
+                                     policy)
+             [:right {"Access-Control-Allow-Headers"
+                      (set/union #{"X-Cool-Header"}
+                                 types/simple-headers-wo-content-type)
+                      "Access-Control-Allow-Methods" "HEAD, POST, GET"
+                      "Access-Control-Max-Age" "365"}])))))

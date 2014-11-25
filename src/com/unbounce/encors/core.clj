@@ -38,16 +38,18 @@
   (mapv adapt-method-name methods))
 
 ;; String -> #{String}
-(defn adapt-control-request-headers-str [header-str]
+(defn header-string-to-set [header-str]
   (set (mapv str/trim (str/split header-str #","))))
 
 ;; Request -> CorsPolicy -> [:left [ErrorMsg]] | [:right Headers]
 (defn cors-preflight-check-method
   [{:keys [headers] :as req} cors-policy]
   (let [cors-method (get headers "Access-Control-Request-Method")
-        supported-methods (adapt-method-names
-                           (set/union (.allowed-methods cors-policy)
-                                      types/simple-methods))
+        supported-methods  (-> (.allowed-methods cors-policy)
+                               (set/union types/simple-methods)
+                               adapt-method-names
+                               set)
+
         supported-methods-str (str/join ", " supported-methods)]
     (cond
      (nil? cors-method)
@@ -56,9 +58,9 @@
 
      (not (contains? supported-methods cors-method))
      [:left [(str "Method requested in "
-                     "Access-Control-Request-Method of CORS request "
-                     "is not supported; requested: `" cors-method "'; "
-                     "supported are " supported-methods-str ".")]]
+                  "Access-Control-Request-Method of CORS request "
+                  "is not supported; requested: `" cors-method "'; "
+                  "supported are " supported-methods-str ".")]]
      :else
      [:right {"Access-Control-Allow-Methods" supported-methods-str}])))
 
@@ -69,7 +71,7 @@
                                      types/simple-headers-wo-content-type)
         supported-headers-str (str/join ", " supported-headers)
         control-req-headers-str (get headers "Access-Control-Request-Headers")
-        control-req-headers (adapt-control-request-headers-str control-req-headers-str)]
+        control-req-headers (header-string-to-set control-req-headers-str)]
 
     (if (set/subset? control-req-headers supported-headers)
       [:right {"Access-Control-Allow-Headers" supported-headers}]
@@ -87,12 +89,14 @@
                               [_ [:left _]] result2))]
     (reduce (fn mconcat-either [result checker]
               (mappend-either result (checker req cors-policy)))
+            [:right {}]
             [cors-preflight-check-max-age
              cors-preflight-check-method
              cors-preflight-check-request-headers])))
 
 (defn apply-cors-policy [{:keys [req app origin cors-policy]}]
   (let [allowed-origins (.allowed-origins cors-policy)
+        common-headers (cors-common-headers origin cors-policy)
         fail-or-ignore (fn fail [err-msg]
                          (if (.ignore-failures? cors-policy)
                            (app req)
@@ -102,23 +106,32 @@
      ;;
      (and allowed-origins
           (contains? allowed-origins origin))
-     ;;
-     (if (= "OPTIONS" (get "method" req))
+
+     ;; check if it is a preflight request
+     (if (= :options (get :method req))
        (let [e-preflight-headers (cors-preflight-headers req cors-policy)]
          (match e-preflight-headers
                 [:left err-msg] (fail-or-ignore err-msg)
                 [:right preflight-headers]
-                (let [common-headers (cors-common-headers origin cors-policy)
-                      all-headers (merge common-headers preflight-headers)]
-                  {:status 204
-                   :headers all-headers
-                   :body ""})))
+                {:status 204
+                 :headers (merge common-headers preflight-headers)
+                 :body ""}))
        ;; else
-       (fail-or-ignore "pending implementation"))
+       (let [control-expose-headers
+             (if-let [exposed-headers (.exposed-headers cors-policy)]
+               {"Access-Control-Expose-Headers"  (str/join ", " exposed-headers)}
+               {})
+
+             all-headers
+             (merge common-headers control-expose-headers)
+
+             resp (app req)]
+         (update-in resp [:headers] merge all-headers)))
 
      ;;
      :else
-     (fail-or-ignore "pending implementation"))))
+     (fail-or-ignore (str "Unsupported origin: " origin)))))
+
 
 (defn wrap-cors [get-policy-for-req app]
   (fn wrap-cors-handler [req]
