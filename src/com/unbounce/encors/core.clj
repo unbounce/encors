@@ -29,49 +29,68 @@
     ;; else
     [:right {}]))
 
+;; Keyword -> String (uppercase)
+(defn adapt-method-name [header-name]
+  (-> header-name name str/upper-case))
+
+;; #{Keyword} -> #{String}
+(defn adapt-method-names [methods]
+  (mapv adapt-method-name methods))
+
+;; String -> #{String}
+(defn adapt-req-headers-str [header-str]
+  (set (mapv str/trim (str/split header-str #","))))
+
 ;; Request -> CorsPolicy -> [:left [ErrorMsg]] | [:right Headers]
 (defn cors-preflight-check-method
   [{:keys [headers] :as req} cors-policy]
-  (let [supported-methods (set/union (.allowed-methods cors-policy)
-                                     types/simple-methods)]
-    (if-let [cors-method (get headers "Access-Control-Request-Method")]
-      (let [supported-methods-value (str/join ", " (mapv name supported-methods))]
-        (if (contains? supported-methods (keyword cors-method))
-          [:right {"Access-Control-Allow-Methods" supported-methods-value}]
-          ;; else
-          [:left [(str "Method requested in "
-                        "Access-Control-Request-Method of CORS request "
-                        "is not supported; requested: " cors-method "; "
-                        "supported are " supported-methods-value)]]))
-      ;; else
-      [:left [(str "Access-Control-Request-Method header "
-                    "is missing in CORS preflight request")]])))
+  (let [cors-method (get headers "Access-Control-Request-Method")
+        supported-methods (adapt-method-names
+                           (set/union (.allowed-methods cors-policy)
+                                      types/simple-methods))
+        supported-methods-str (str/join ", " supported-methods)]
+    (cond
+     (nil? cors-method)
+     [:left [(str "Access-Control-Request-Method header "
+                  "is missing in CORS preflight request.")]]
 
-;; ;; Request -> CorsPolicy -> [:left [ErrorMsg]] | [:right Headers]
-;; (defn cors-preflight-check-request-headers
-;;   [{:keys [headers] :as req} cors-policy]
-;;   (let [supported-headers (merge (.request-headers cors-policy)
-;;                                  (types/simple-headers-wo-content-type))]
-;;     (if-let [control-headers (get headers "Access-Control-Request-Headers")]
-;;       ;; else
-;;       [:right {}]
-;;       ))
-;;   )
+     (not (contains? supported-methods cors-method))
+     [:left [(str "Method requested in "
+                     "Access-Control-Request-Method of CORS request "
+                     "is not supported; requested: `" cors-method "'; "
+                     "supported are " supported-methods-str ".")]]
+     :else
+     [:right {"Access-Control-Allow-Methods" supported-methods-str}])))
+
+;; Request -> CorsPolicy -> [:left [ErrorMsg]] | [:right Headers]
+(defn cors-preflight-check-request-headers
+  [{:keys [headers] :as req} cors-policy]
+  (let [supported-headers (set/union (.request-headers cors-policy)
+                                     types/simple-headers-wo-content-type)
+        supported-headers-str (str/join ", " supported-headers)
+        control-req-headers-str (get headers "Access-Control-Request-Headers")
+        control-req-headers (adapt-req-headers-str control-req-headers-str)]
+
+    (println (str "===> " supported-headers-str))
+    (if (set/subset? control-req-headers supported-headers)
+      [:right {"Access-Control-Allow-Headers" supported-headers}]
+      [:left [(str "HTTP header requested in Access-Control-Request-Headers of "
+                   "CORS request is not supported; requested: `" control-req-headers-str
+                   "'; supported are `" supported-headers-str "'.")]])))
 
 ;; Request -> CorsPolicy -> [:left [ErrorMsg]] | [:right Headers]
 (defn cors-preflight-headers [req cors-policy]
-  (let [merge-results (fn merge-result [result1 result2]
+  (let [mappend-either (fn merge-result [result1 result2]
                        (match [result1 result2]
                               [[:left a] [:left b]] [:left (concat a b)]
                               [[:right a] [:right b]] [:right (merge a b)]
                               [[:left _] _] result1
                               [_ [:left _]] result2))]
-    (reduce (fn merge-results-reduction [result checker]
-              (merge-results result (checker req cors-policy)))
+    (reduce (fn mconcat-either [result checker]
+              (mappend-either result (checker req cors-policy)))
             [cors-preflight-check-max-age
              cors-preflight-check-method
-             ;; cors-preflight-check-request-headers
-             ])))
+             cors-preflight-check-request-headers])))
 
 (defn apply-cors-policy [{:keys [req app origin cors-policy]}]
   (let [allowed-origins (.allowed-origins cors-policy)

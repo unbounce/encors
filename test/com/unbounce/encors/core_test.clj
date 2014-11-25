@@ -1,6 +1,8 @@
 (ns com.unbounce.encors.core-test
   (:require [clojure.test :refer :all]
+            [clojure.set :as set]
             [com.unbounce.encors.types :refer [map->CorsPolicy]]
+            [com.unbounce.encors.types :as types]
             [com.unbounce.encors.core :refer :all]))
 
 (def default-cors-options
@@ -59,7 +61,7 @@
     (let [method :get
           policy (map->CorsPolicy default-cors-options)]
       (is (= (cors-preflight-check-method
-              {:headers {"Access-Control-Request-Method" "get"}}
+              {:headers {"Access-Control-Request-Method" "GET"}}
               policy)
              [:right {"Access-Control-Allow-Methods" "get, head, post"}]))))
 
@@ -67,7 +69,7 @@
     (let [method :delete
           policy (map->CorsPolicy default-cors-options)]
       (is (= (cors-preflight-check-method
-              {:headers {"Access-Control-Request-Method" "delete"}}
+              {:headers {"Access-Control-Request-Method" "DELETE"}}
               policy)
              [:left [(str "Method requested in Access-Control-Request-Method of "
                            "CORS request is not supported; requested: delete; "
@@ -79,3 +81,25 @@
       (is (= (cors-preflight-check-method {:headers {}} policy)
              [:left [(str "Access-Control-Request-Method header is missing in CORS "
                            "preflight request")]])))))
+
+(deftest cors-preflight-check-request-headers-test
+  (let [policy (map->CorsPolicy (merge default-cors-options
+                                       {:request-headers #{"X-Safe-To-Expose"}}))]
+    (testing "Access-Control-Request-Headers doesn't match policy request headers"
+      (is (= (cors-preflight-check-request-headers
+              {:headers {"Access-Control-Request-Headers"
+                         "X-Not-Safe-To-Expose, X-Blah-Bleh"}}
+              policy)
+             [:left [(str "HTTP header requested in Access-Control-Request-Headers of "
+                          "CORS request is not supported; requested: "
+                          "`X-Not-Safe-To-Expose, X-Blah-Bleh'; "
+                          "supported are `X-Safe-To-Expose, Accept-Language, "
+                          "Content-Language, Accept'.")]])))
+    (testing "Access-Control-Request-Headers match policy request headers"
+      (is (= (cors-preflight-check-request-headers
+              {:headers {"Access-Control-Request-Headers"
+                         "X-Safe-To-Expose"}}
+              policy)
+             [:right {"Access-Control-Allow-Headers"
+                      (set/union #{"X-Safe-To-Expose"}
+                                 types/simple-headers-wo-content-type)}])))))
