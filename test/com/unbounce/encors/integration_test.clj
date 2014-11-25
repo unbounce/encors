@@ -1,6 +1,5 @@
 (ns com.unbounce.encors.integration-test
-  (:require [com.unbounce.encors.core :as cors]
-            [com.unbounce.encors.types :refer [map->CorsPolicy]]
+  (:require [com.unbounce.encors :as cors]
             [clojure.string :as str]
             [clojure.test :refer :all]
             [clj-http.client :as http]
@@ -66,7 +65,7 @@
    :ignore-failures? false})
 
 (def partial-cors-policy
-  (map->CorsPolicy partial-cors-options))
+  (cors/map->CorsPolicy partial-cors-options))
 
 (def full-cors-options
   (merge partial-cors-options
@@ -76,7 +75,7 @@
           :require-origin? true}))
 
 (def full-cors-policy
-  (map->CorsPolicy full-cors-options))
+  (cors/map->CorsPolicy full-cors-options))
 
 (defn- assert-no-cors-response [res]
   (are [header] (nil? (-> res :headers (get header)))
