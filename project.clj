@@ -13,6 +13,8 @@
                                   [ring/ring-jetty-adapter ~ring-version]
                                   [compojure "1.2.1"]]}}
 
+  :eastwood {:exclude-namespaces [com.unbounce.encors]}
+
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [potemkin "0.3.11"]
                  [org.clojure/core.match "0.2.1"]
