@@ -38,7 +38,7 @@
   (mapv adapt-method-name methods))
 
 ;; String -> #{String}
-(defn adapt-req-headers-str [header-str]
+(defn adapt-control-request-headers-str [header-str]
   (set (mapv str/trim (str/split header-str #","))))
 
 ;; Request -> CorsPolicy -> [:left [ErrorMsg]] | [:right Headers]
@@ -69,9 +69,8 @@
                                      types/simple-headers-wo-content-type)
         supported-headers-str (str/join ", " supported-headers)
         control-req-headers-str (get headers "Access-Control-Request-Headers")
-        control-req-headers (adapt-req-headers-str control-req-headers-str)]
+        control-req-headers (adapt-control-request-headers-str control-req-headers-str)]
 
-    (println (str "===> " supported-headers-str))
     (if (set/subset? control-req-headers supported-headers)
       [:right {"Access-Control-Allow-Headers" supported-headers}]
       [:left [(str "HTTP header requested in Access-Control-Request-Headers of "
