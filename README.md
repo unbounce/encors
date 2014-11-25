@@ -15,7 +15,7 @@ Yet again another [CORS](http://www.w3.org/TR/cors/) library for ring.
 
 Add CORS support to ring apps, this middleware provides the following methods:
 
-* `map->CorsPolicy`
+### `map->CorsPolicy`
 
 Receives a map that _must_ have the following keys:
 
@@ -81,9 +81,9 @@ Receives a map that _must_ have the following keys:
       * a response with HTTP status 400 (bad request) and short error
         message will be returned if this field is `false`
 
-* `wrap-cors`
+### `wrap-cors`
 
-Receives a 2 arguments:
+Receives 2 arguments:
 
   1) A function that receives a ring request and returns a CORS
      policy. This function needs to be implemented by the caller, and
