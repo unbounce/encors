@@ -54,8 +54,8 @@
              [:right {"Access-Control-Max-Age" (str max-age)}]))))
   (testing "when max-age is not present"
     (let [policy (map->CorsPolicy default-cors-options)]
-      (is (= (cors-preflight-check-max-age {:headers {}} policy))
-          [:right {}]))))
+      (is (= (cors-preflight-check-max-age {:headers {}} policy)
+             [:right {}])))))
 
 (deftest cors-preflight-check-method-test
   (testing "Access-Control-Request-Method header has a method allowed by the policy"
