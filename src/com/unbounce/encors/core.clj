@@ -8,7 +8,7 @@
 (defn cors-failure [err-msg]
   { :status 400
     :headers {"Content-Type" "text/html; charset-utf-8"}
-    :body err-msg })
+    :body (if (vector? err-msg) (first err-msg) err-msg)})
 
 ;; Origin -> CorsPolicy -> Headers
 (defn cors-common-headers [origin cors-policy]
@@ -39,16 +39,18 @@
 
 ;; String -> #{String}
 (defn header-string-to-set [header-str]
-  (set (mapv str/trim (str/split header-str #","))))
+  (if (empty? header-str)
+    #{}
+    (into (sorted-set) (mapv str/trim (str/split header-str #",")))))
 
 ;; Request -> CorsPolicy -> [:left [ErrorMsg]] | [:right Headers]
 (defn cors-preflight-check-method
   [{:keys [headers] :as req} cors-policy]
-  (let [cors-method (get headers "Access-Control-Request-Method")
-        supported-methods  (-> (.allowed-methods cors-policy)
-                               (set/union types/simple-methods)
-                               adapt-method-names
-                               set)
+  (let [cors-method (get headers "access-control-request-method")
+        supported-methods (into (sorted-set)
+                                (-> (.allowed-methods cors-policy)
+                                  (set/union types/simple-methods)
+                                  adapt-method-names))
 
         supported-methods-str (str/join ", " supported-methods)]
     (cond
@@ -59,7 +61,7 @@
      (not (contains? supported-methods cors-method))
      [:left [(str "Method requested in "
                   "Access-Control-Request-Method of CORS request "
-                  "is not supported; requested: `" cors-method "'; "
+                  "is not supported; requested: '" cors-method "'; "
                   "supported are " supported-methods-str ".")]]
      :else
      [:right {"Access-Control-Allow-Methods" supported-methods-str}])))
@@ -70,14 +72,14 @@
   (let [supported-headers (set/union (.request-headers cors-policy)
                                      types/simple-headers-wo-content-type)
         supported-headers-str (str/join ", " supported-headers)
-        control-req-headers-str (get headers "Access-Control-Request-Headers")
+        control-req-headers-str (get headers "access-control-request-headers")
         control-req-headers (header-string-to-set control-req-headers-str)]
 
-    (if (set/subset? control-req-headers supported-headers)
-      [:right {"Access-Control-Allow-Headers" supported-headers}]
-      [:left [(str "HTTP header requested in Access-Control-Request-Headers of "
-                   "CORS request is not supported; requested: `" control-req-headers-str
-                   "'; supported are `" supported-headers-str "'.")]])))
+    (if (or (empty? control-req-headers) (set/subset? control-req-headers supported-headers))
+      [:right {"Access-Control-Allow-Headers" supported-headers-str}]
+      [:left [(str "HTTP headers requested in Access-Control-Request-Headers of "
+                   "CORS request is not supported; requested: '" control-req-headers-str
+                   "'; supported are '" supported-headers-str "'.")]])))
 
 ;; Request -> CorsPolicy -> [:left [ErrorMsg]] | [:right Headers]
 (defn cors-preflight-headers [req cors-policy]
@@ -108,7 +110,7 @@
           (contains? allowed-origins origin))
 
      ;; check if it is a preflight request
-     (if (= :options (get :method req))
+     (if (= :options (get req :request-method))
        (let [e-preflight-headers (cors-preflight-headers req cors-policy)]
          (match e-preflight-headers
                 [:left err-msg] (fail-or-ignore err-msg)
@@ -119,7 +121,7 @@
        ;; else
        (let [control-expose-headers
              (if-let [exposed-headers (.exposed-headers cors-policy)]
-               {"Access-Control-Expose-Headers"  (str/join ", " exposed-headers)}
+               {"Access-Control-Expose-Headers" (str/join ", " exposed-headers)}
                {})
 
              all-headers
@@ -137,7 +139,7 @@
   (fn wrap-cors-handler [req]
     (let [cors-policy     (get-policy-for-req req)
           allowed-origins (.allowed-origins cors-policy)
-          origin          (get (:headers req) "Origin")]
+          origin          (get (:headers req) "origin")]
 
       (cond
        ;; halt & fail
@@ -145,7 +147,7 @@
        (cors-failure "Origin header is missing")
 
        ;; continue with inner app
-       (not (.require-origin? cors-policy))
+       (nil? origin)
        (app req)
 
        :else ;; perform cors validation

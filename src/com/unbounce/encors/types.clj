@@ -14,7 +14,7 @@
 
 (def CorsPolicySchema
   {(s/required-key :allowed-origins)    (s/maybe #{s/Str})
-   (s/required-key :allowed-methods)    #{(s/enum :get :post :put :options)}
+   (s/required-key :allowed-methods)    #{(s/enum :head :options :get :post :put :delete :patch :trace)}
    (s/required-key :request-headers)    #{s/Str}
    (s/required-key :exposed-headers)    (s/maybe #{s/Str})
    (s/required-key :max-age)            (s/maybe s/Int)

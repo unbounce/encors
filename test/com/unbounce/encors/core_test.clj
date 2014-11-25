@@ -1,6 +1,7 @@
 (ns com.unbounce.encors.core-test
   (:require [clojure.test :refer :all]
             [clojure.set :as set]
+            [clojure.string :as str]
             [com.unbounce.encors.types :refer [map->CorsPolicy]]
             [com.unbounce.encors.types :as types]
             [com.unbounce.encors.core :refer :all]))
@@ -61,19 +62,19 @@
     (let [method :get
           policy (map->CorsPolicy default-cors-options)]
       (is (= (cors-preflight-check-method
-              {:headers {"Access-Control-Request-Method" "GET"}}
+              {:headers {"access-control-request-method" "GET"}}
               policy)
-             [:right {"Access-Control-Allow-Methods" "HEAD, POST, GET"}]))))
+             [:right {"Access-Control-Allow-Methods" "GET, HEAD, POST"}]))))
 
   (testing "Access-Control-Request-Method header has a method not allowed by the policy"
     (let [method :delete
           policy (map->CorsPolicy default-cors-options)]
       (is (= (cors-preflight-check-method
-              {:headers {"Access-Control-Request-Method" "DELETE"}}
+              {:headers {"access-control-request-method" "DELETE"}}
               policy)
              [:left [(str "Method requested in Access-Control-Request-Method of "
-                           "CORS request is not supported; requested: `DELETE'; "
-                           "supported are HEAD, POST, GET.")]]))))
+                           "CORS request is not supported; requested: 'DELETE'; "
+                           "supported are GET, HEAD, POST.")]]))))
 
   (testing "Access-Control-Request-Method header is missing"
     (let [method :get
@@ -87,22 +88,23 @@
                                        {:request-headers #{"X-Safe-To-Expose"}}))]
     (testing "Access-Control-Request-Headers doesn't match policy request headers"
       (is (= (cors-preflight-check-request-headers
-              {:headers {"Access-Control-Request-Headers"
+              {:headers {"access-control-request-headers"
                          "X-Not-Safe-To-Expose, X-Blah-Bleh"}}
               policy)
-             [:left [(str "HTTP header requested in Access-Control-Request-Headers of "
+             [:left [(str "HTTP headers requested in Access-Control-Request-Headers of "
                           "CORS request is not supported; requested: "
-                          "`X-Not-Safe-To-Expose, X-Blah-Bleh'; "
-                          "supported are `X-Safe-To-Expose, Accept-Language, "
+                          "'X-Not-Safe-To-Expose, X-Blah-Bleh'; "
+                          "supported are 'X-Safe-To-Expose, Accept-Language, "
                           "Content-Language, Accept'.")]])))
     (testing "Access-Control-Request-Headers match policy request headers"
       (is (= (cors-preflight-check-request-headers
-              {:headers {"Access-Control-Request-Headers"
+              {:headers {"access-control-request-headers"
                          "X-Safe-To-Expose"}}
               policy)
              [:right {"Access-Control-Allow-Headers"
-                      (set/union #{"X-Safe-To-Expose"}
-                                 types/simple-headers-wo-content-type)}])))))
+                      (str/join ", "
+                        (set/union #{"X-Safe-To-Expose"}
+                                   types/simple-headers-wo-content-type))}])))))
 
 (deftest cors-preflight-headers-test
   (testing "With a request that complies with policy"
@@ -111,13 +113,14 @@
                                           :allow-credentials? true
                                           :request-headers #{"X-Cool-Header"}
                                           :allowed-methods #{:get}}))]
-      (is (= (cors-preflight-headers {:headers {"Access-Control-Request-Headers"
+      (is (= (cors-preflight-headers {:headers {"access-control-request-headers"
                                                 "X-Cool-Header"
-                                                "Access-Control-Request-Method"
+                                                "access-control-request-method"
                                                 "GET"}}
                                      policy)
              [:right {"Access-Control-Allow-Headers"
-                      (set/union #{"X-Cool-Header"}
-                                 types/simple-headers-wo-content-type)
-                      "Access-Control-Allow-Methods" "HEAD, POST, GET"
+                      (str/join ", "
+                        (set/union #{"X-Cool-Header"}
+                                   types/simple-headers-wo-content-type))
+                      "Access-Control-Allow-Methods" "GET, HEAD, POST"
                       "Access-Control-Max-Age" "365"}])))))
