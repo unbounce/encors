@@ -48,7 +48,8 @@
 (def ^:const allowed-origin  "test.encors.net")
 (def ^:const allowed-methods "GET, HEAD, PATCH, POST")
 (def ^:const allowed-headers "Content-Type, X-Allowed")
-(def ^:const active-allowed-headers "Accept-Language, Content-Language, Content-Type, X-Allowed, Accept")
+(def ^:const active-allowed-headers
+  "Accept-Language, Content-Language, Content-Type, X-Allowed, Accept")
 (def ^:const expose-headers  "X-Safe-To-Expose, X-Safe-To-Expose-Too")
 (def ^:const unallowed-origin "not.cool.io")
 
@@ -225,7 +226,7 @@
     ;; Test the app, with CORS middleware (partial config)
     (testing "Partial CORS policy"
       (reset! sut
-              (cors/wrap-cors (constantly partial-cors-policy) app))
+              (cors/wrap-cors app (constantly partial-cors-policy)))
       (app-features-partial-cors)
       (valid-preflight-partial-cors)
       (invalid-preflight-partial-cors))
@@ -233,7 +234,7 @@
     ;; Test the app, with CORS middleware (full config)
     (testing "Full CORS policy"
       (reset! sut
-              (cors/wrap-cors (constantly full-cors-policy) app))
+              (cors/wrap-cors app (constantly full-cors-policy)))
       (app-features-full-cors)
       (valid-preflight-full-cors)
       (invalid-preflight-full-cors))

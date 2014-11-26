@@ -121,7 +121,7 @@ Example:
 
 (def cors-policy (map->CorsPolicy cors-policy-settings))
 
-(def app (wrap-cors (constantly cors-policy) raw-app))
+(def app (wrap-cors raw-app (constantly cors-policy)))
 ```
 
 ## License

@@ -75,7 +75,8 @@
         control-req-headers-str (get headers "access-control-request-headers")
         control-req-headers (header-string-to-set control-req-headers-str)]
 
-    (if (or (empty? control-req-headers) (set/subset? control-req-headers supported-headers))
+    (if (or (empty? control-req-headers)
+            (set/subset? control-req-headers supported-headers))
       [:right {"Access-Control-Allow-Headers" supported-headers-str}]
       [:left [(str "HTTP headers requested in Access-Control-Request-Headers of "
                    "CORS request is not supported; requested: '" control-req-headers-str
@@ -135,7 +136,7 @@
      (fail-or-ignore (str "Unsupported origin: " (pr-str origin))))))
 
 
-(defn wrap-cors [get-policy-for-req app]
+(defn wrap-cors [app get-policy-for-req]
   (fn wrap-cors-handler [req]
     (let [cors-policy     (get-policy-for-req req)
           allowed-origins (.allowed-origins cors-policy)
