@@ -53,7 +53,7 @@
 (def ^:const expose-headers  "X-Safe-To-Expose, X-Safe-To-Expose-Too")
 (def ^:const unallowed-origin "not.cool.io")
 
-(def partial-cors-options
+(def partial-cors-policy
   {:allowed-origins #{allowed-origin}
    :allowed-methods (set (mapv (comp keyword str/lower-case)
                                (str/split allowed-methods #", ")))
@@ -65,18 +65,14 @@
    :require-origin? false
    :ignore-failures? false})
 
-(def partial-cors-policy
-  (cors/map->CorsPolicy partial-cors-options))
 
-(def full-cors-options
-  (merge partial-cors-options
+(def full-cors-policy
+  (merge partial-cors-policy
          {:exposed-headers (set (str/split expose-headers #", "))
           :max-age 1234
           :allow-credentials? true
           :require-origin? true}))
 
-(def full-cors-policy
-  (cors/map->CorsPolicy full-cors-options))
 
 (defn- assert-no-cors-response [res]
   (are [header] (nil? (-> res :headers (get header)))
@@ -226,7 +222,7 @@
     ;; Test the app, with CORS middleware (partial config)
     (testing "Partial CORS policy"
       (reset! sut
-              (cors/wrap-cors app (constantly partial-cors-policy)))
+              (cors/wrap-cors app partial-cors-policy))
       (app-features-partial-cors)
       (valid-preflight-partial-cors)
       (invalid-preflight-partial-cors))
@@ -234,7 +230,7 @@
     ;; Test the app, with CORS middleware (full config)
     (testing "Full CORS policy"
       (reset! sut
-              (cors/wrap-cors app (constantly full-cors-policy)))
+              (cors/wrap-cors app full-cors-policy))
       (app-features-full-cors)
       (valid-preflight-full-cors)
       (invalid-preflight-full-cors))

@@ -2,7 +2,6 @@
   (:require [clojure.test :refer :all]
             [clojure.set :as set]
             [clojure.string :as str]
-            [com.unbounce.encors.types :refer [map->CorsPolicy]]
             [com.unbounce.encors.types :as types]
             [com.unbounce.encors.core :refer :all]))
 
@@ -19,48 +18,48 @@
 
 (deftest cors-common-headers-test
   (testing "when origin is not present when origin-varies? is true"
-    (let [policy (map->CorsPolicy default-cors-options)]
+    (let [policy default-cors-options]
       (is (= (cors-common-headers nil policy)
              {"Access-Control-Allow-Origin" "*"
               "Vary" "Origin"}))))
 
   (testing "when origin is not present and origin-varies? is false"
-    (let [policy (map->CorsPolicy (merge default-cors-options
-                                         {:origin-varies? false}))]
+    (let [policy (merge default-cors-options
+                        {:origin-varies? false})]
       (is (= (cors-common-headers nil policy)
              {"Access-Control-Allow-Origin" "*"}))))
 
   (testing "when origin is present and allow credentials is true"
     (let [origin "foobar.com"
-          policy (map->CorsPolicy (merge default-cors-options {:allowed-origins #{origin}
-                                                       :allow-credentials? true}))]
+          policy (merge default-cors-options {:allowed-origins #{origin}
+                                              :allow-credentials? true})]
       (is (= (cors-common-headers origin policy)
              {"Access-Control-Allow-Origin" origin
               "Access-Control-Allow-Credentials" "true"}))))
 
   (testing "when origin is present and allow credentials is false"
     (let [origin "foobar.com"
-          policy (map->CorsPolicy (merge default-cors-options
-                                         {:allowed-origins #{origin}}))]
+          policy (merge default-cors-options
+                        {:allowed-origins #{origin}})]
       (is (= (cors-common-headers origin policy)
              {"Access-Control-Allow-Origin" origin})))))
 
 (deftest cors-preflight-check-max-age-test
   (testing "when max-age is present"
     (let [max-age 365
-          policy (map->CorsPolicy (merge default-cors-options
-                                         {:max-age 365}))]
+          policy (merge default-cors-options
+                        {:max-age 365})]
       (is (= (cors-preflight-check-max-age {:headers {}} policy)
              [:right {"Access-Control-Max-Age" (str max-age)}]))))
   (testing "when max-age is not present"
-    (let [policy (map->CorsPolicy default-cors-options)]
+    (let [policy default-cors-options]
       (is (= (cors-preflight-check-max-age {:headers {}} policy)
              [:right {}])))))
 
 (deftest cors-preflight-check-method-test
   (testing "Access-Control-Request-Method header has a method allowed by the policy"
     (let [method :get
-          policy (map->CorsPolicy default-cors-options)]
+          policy default-cors-options]
       (is (= (cors-preflight-check-method
               {:headers {"access-control-request-method" "GET"}}
               policy)
@@ -68,7 +67,7 @@
 
   (testing "Access-Control-Request-Method header has a method not allowed by the policy"
     (let [method :delete
-          policy (map->CorsPolicy default-cors-options)]
+          policy default-cors-options]
       (is (= (cors-preflight-check-method
               {:headers {"access-control-request-method" "DELETE"}}
               policy)
@@ -78,14 +77,14 @@
 
   (testing "Access-Control-Request-Method header is missing"
     (let [method :get
-          policy (map->CorsPolicy default-cors-options)]
+          policy default-cors-options]
       (is (= (cors-preflight-check-method {:headers {}} policy)
              [:left [(str "Access-Control-Request-Method header is missing in CORS "
                            "preflight request.")]])))))
 
 (deftest cors-preflight-check-request-headers-test
-  (let [policy (map->CorsPolicy (merge default-cors-options
-                                       {:request-headers #{"X-Safe-To-Expose"}}))]
+  (let [policy (merge default-cors-options
+                      {:request-headers #{"X-Safe-To-Expose"}})]
     (testing "Access-Control-Request-Headers doesn't match policy request headers"
       (is (= (cors-preflight-check-request-headers
               {:headers {"access-control-request-headers"
@@ -108,11 +107,11 @@
 
 (deftest cors-preflight-headers-test
   (testing "With a request that complies with policy"
-    (let [policy (map->CorsPolicy (merge default-cors-options
-                                         {:max-age 365
-                                          :allow-credentials? true
-                                          :request-headers #{"X-Cool-Header"}
-                                          :allowed-methods #{:get}}))]
+    (let [policy (merge default-cors-options
+                        {:max-age 365
+                         :allow-credentials? true
+                         :request-headers #{"X-Cool-Header"}
+                         :allowed-methods #{:get}})]
       (is (= (cors-preflight-headers {:headers {"access-control-request-headers"
                                                 "X-Cool-Header"
                                                 "access-control-request-method"
