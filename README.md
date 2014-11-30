@@ -25,67 +25,67 @@ Receives 2 arguments:
 
   2) A map that _must_ have the following keys:
 
-    - `:allowed-origins`
+  - `:allowed-origins`
 
-      A set that specifies which origins are allowed by the
-      middleware. A value of nil indicates unrestricted cross-origin
-      sharing and results in `*` as value for the
-      `Access-Control-Allow-Origin` HTTP response header.
+    A set that specifies which origins are allowed by the
+    middleware. A value of nil indicates unrestricted cross-origin
+    sharing and results in `*` as value for the
+    `Access-Control-Allow-Origin` HTTP response header.
 
-    - `:allowed-methods`
+  - `:allowed-methods`
 
-      A set that specifies the HTTP methods allowed in CORS requests.
-      (valid values are [here](https://github.com/unbounce/encors/blob/master/src/com/unbounce/encors/types.clj#L17))
+    A set that specifies the HTTP methods allowed in CORS requests.
+    (valid values are [here](https://github.com/unbounce/encors/blob/master/src/com/unbounce/encors/types.clj#L17))
 
-    - `:request-headers`
+  - `:request-headers`
 
-      A set of field names of HTTP request headers that are allowed in
-      CORS requests.  Some headers found on a simple CORS implementation
-      are included implicitly (except `Content-Type`)
+    A set of field names of HTTP request headers that are allowed in
+    CORS requests.  Some headers found on a simple CORS implementation
+    are included implicitly (except `Content-Type`)
 
-    - `:exposed-headers`
+  - `:exposed-headers`
 
-      A set of HTTP header field names that will be exposed on the
-      client (can be nil).
+    A set of HTTP header field names that will be exposed on the
+    client (can be nil).
 
-    - `:max-age`
+  - `:max-age`
 
-      Number of seconds that the response may be cached by the client
-      (can be nil).
+    Number of seconds that the response may be cached by the client
+    (can be nil).
 
-    - `:allow-credentials?`
+  - `:allow-credentials?`
 
-      A boolean that if `true`, adds the
-      `Access-Control-Allow-Credentials` header on preflight requests.
+    A boolean that if `true`, adds the
+    `Access-Control-Allow-Credentials` header on preflight requests.
 
-    - `:origin-varies?`
+  - `:origin-varies?`
 
-      If the resource is shared by multiple origins but
-      `Access-Control-Allow-Origin` is not set to `*` this may be set to
-      `true`.
+    If the resource is shared by multiple origins but
+    `Access-Control-Allow-Origin` is not set to `*` this may be set to
+    `true`.
 
-    - `:require-origin?`
+  - `:require-origin?`
 
-      If this is `true` and the request does not include an `Origin`
-      header the response will have HTTP status 400 (bad request) and
-      the body will contain a short error message.
+    If this is `true` and the request does not include an `Origin`
+    header the response will have HTTP status 400 (bad request) and
+    the body will contain a short error message.
 
-    - `:ignore-failures?`
+  - `:ignore-failures?`
 
-      In case that:
+    In case that:
 
-        *  the request contains an `Origin` header and
+      *  the request contains an `Origin` header and
 
-        *  the client does not conform with the CORS protocol
-           (__request is out of scope__)
+      *  the client does not conform with the CORS protocol
+         (__request is out of scope__)
 
-      then
+    then
 
-        * the request is passed on unchanged to the application if this
-          field is `true` or
+      * the request is passed on unchanged to the application if this
+        field is `true` or
 
-        * a response with HTTP status 400 (bad request) and short error
-          message will be returned if this field is `false`
+      * a response with HTTP status 400 (bad request) and short error
+        message will be returned if this field is `false`
 
 
 Example:
