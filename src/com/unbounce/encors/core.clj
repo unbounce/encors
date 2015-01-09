@@ -9,7 +9,7 @@
 
 (defn cors-failure [err-msg]
   { :status 400
-    :headers {"Content-Type" "text/html; charset-utf-8"}
+    :headers {"Content-Type" "text/html"}
     :body (if (vector? err-msg) (first err-msg) err-msg)})
 
 ;; Origin -> CorsPolicy -> Headers
@@ -43,7 +43,11 @@
 (defn header-string-to-set [header-str]
   (if (empty? header-str)
     #{}
-    (into (sorted-set) (mapv str/trim (str/split header-str #",")))))
+    (into
+      (sorted-set)
+      (mapv
+        (comp str/lower-case str/trim)
+        (str/split header-str #",")))))
 
 ;; Request -> CorsPolicy -> [:left [ErrorMsg]] | [:right Headers]
 (defn cors-preflight-check-method
@@ -71,14 +75,18 @@
 ;; Request -> CorsPolicy -> [:left [ErrorMsg]] | [:right Headers]
 (defn cors-preflight-check-request-headers
   [{:keys [headers] :as req} cors-policy]
-  (let [supported-headers (set/union (:request-headers cors-policy)
-                                     types/simple-headers-wo-content-type)
+  (let [supported-headers (set/union
+                            (:request-headers cors-policy)
+                            types/simple-headers-wo-content-type)
+        supported-headers* (into
+                             (sorted-set)
+                             (map str/lower-case supported-headers))
         supported-headers-str (str/join ", " supported-headers)
         control-req-headers-str (get headers "access-control-request-headers")
         control-req-headers (header-string-to-set control-req-headers-str)]
 
     (if (or (empty? control-req-headers)
-            (set/subset? control-req-headers supported-headers))
+            (set/subset? control-req-headers supported-headers*))
       [:right {"Access-Control-Allow-Headers" supported-headers-str}]
       [:left [(str "HTTP headers requested in Access-Control-Request-Headers of "
                    "CORS request is not supported; requested: '" control-req-headers-str

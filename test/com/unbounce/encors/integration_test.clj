@@ -49,7 +49,7 @@
 (def ^:const allowed-methods "GET, HEAD, PATCH, POST")
 (def ^:const allowed-headers "Content-Type, X-Allowed")
 (def ^:const active-allowed-headers
-  "Accept-Language, Content-Language, Content-Type, X-Allowed, Accept")
+  "Accept-Language, Content-Language, Content-Type, Accept, X-Allowed")
 (def ^:const expose-headers  "X-Safe-To-Expose, X-Safe-To-Expose-Too")
 (def ^:const unallowed-origin "not.cool.io")
 
@@ -58,7 +58,7 @@
    :allowed-methods (set (mapv (comp keyword str/lower-case)
                                (str/split allowed-methods #", ")))
    :exposed-headers nil
-   :request-headers #{allowed-headers}
+   :request-headers (set (str/split allowed-headers #", "))
    :max-age nil
    :allow-credentials? false
    :origin-varies? true
@@ -167,13 +167,18 @@
 
 ;; CORS tests
 
-(defn- send-preflight-request [origin]
-  (let [res (http/options (uri "/")
-                          {:headers {:Access-Control-Request-Method "POST"
-                                     :Origin origin}
-                           :throw-exceptions false})]
-    (debug-res "options /" res)
-    res))
+(defn- send-preflight-request
+  ([origin]
+    (send-preflight-request origin {}))
+  ([origin extra-headers]
+    (let [res (http/options (uri "/")
+                            {:headers (merge
+                                        {:Access-Control-Request-Method "POST"
+                                         :Origin origin}
+                                        extra-headers)
+                             :throw-exceptions false})]
+      (debug-res "options /" res)
+      res)))
 
 ; TODO test invalid preflight with bad request method and bad request headers
 
@@ -207,6 +212,16 @@
     (let [res (send-preflight-request unallowed-origin)]
              (assert-response res 400 assert-no-cors-response))))
 
+(deftest preflight-valid-request-headers
+  (testing "Preflight valid request headers"
+    (let [res (send-preflight-request allowed-origin {"Access-Control-Request-Headers" "x-allowed,content-type"})]
+             (assert-response res 204 assert-partial-cors-preflight-response))))
+
+(deftest preflight-invalid-request-headers
+  (testing "Preflight invalid request headers"
+    (let [res (send-preflight-request allowed-origin {"Access-Control-Request-Headers" "x-not-allowed,content-type"})]
+             (assert-response res 400 assert-no-cors-response))))
+
 ;; Jetty, tests and SUT orchestration
 
 (defn test-ns-hook []
@@ -225,7 +240,9 @@
               (cors/wrap-cors app partial-cors-policy))
       (app-features-partial-cors)
       (valid-preflight-partial-cors)
-      (invalid-preflight-partial-cors))
+      (invalid-preflight-partial-cors)
+      (preflight-valid-request-headers)
+      (preflight-invalid-request-headers))
 
     ;; Test the app, with CORS middleware (full config)
     (testing "Full CORS policy"
