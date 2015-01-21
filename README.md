@@ -108,6 +108,7 @@ Example:
        :exposed-headers nil
        :allow-credentials? true
        :origin-varies? false
+       :max-age nil
        :require-origin? true
        :ignore-failures? false
      })
