@@ -118,6 +118,6 @@ Example:
 
 ## License
 
-Copyright © 2014 Unbounce Marketing Solutions Inc.
+Copyright © 2014-2015 Unbounce Marketing Solutions Inc.
 
 Distributed under the [MIT License (MIT)](http://opensource.org/licenses/MIT).

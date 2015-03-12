@@ -1,4 +1,4 @@
-(def ring-version "1.3.1")
+(def ring-version "1.3.2")
 
 (defproject com.unbounce/encors "2.1.1-SNAPSHOT"
   :description "encors is a CORS library for ring"
@@ -11,7 +11,7 @@
                              [jonase/eastwood "0.2.1"]]
                    :dependencies [[clj-http "1.0.1"]
                                   [ring/ring-jetty-adapter ~ring-version]
-                                  [compojure "1.2.1"]]}}
+                                  [compojure "1.3.2"]]}}
 
   ; set to true to have verbose debug of integration tests
   :jvm-opts ["-Ddebug=false"]
@@ -19,7 +19,7 @@
   :eastwood {:exclude-namespaces [com.unbounce.encors]}
 
   :dependencies [[org.clojure/clojure "1.6.0"]
-                 [potemkin "0.3.11"]
+                 [potemkin "0.3.12"]
                  [org.clojure/core.match "0.2.1"]
-                 [prismatic/schema "0.3.3"]
+                 [prismatic/schema "0.4.0"]
                  [ring/ring-core ~ring-version]])
