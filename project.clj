@@ -21,5 +21,5 @@
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [potemkin "0.3.13"]
                  [org.clojure/core.match "0.2.2"]
-                 [prismatic/schema "0.4.2"]
+                 [prismatic/schema "0.4.3"]
                  [ring/ring-core ~ring-version]])
