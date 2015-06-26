@@ -14,14 +14,17 @@
 
 ;; Origin -> CorsPolicy -> Headers
 (defn cors-common-headers [origin cors-policy]
-  (match [origin (:allow-credentials? cors-policy) (:origin-varies? cors-policy)]
-    [nil _ true]     {"Access-Control-Allow-Origin" "*" "Vary" "Origin"}
-    [nil _ false]    {"Access-Control-Allow-Origin" "*"}
+  (match [origin (:allowed-origins cors-policy) (:allow-credentials? cors-policy) (:origin-varies? cors-policy)]
+    [_ nil _ true]  {"Access-Control-Allow-Origin" "*" "Vary" "Origin"}
+    [_ nil _ false] {"Access-Control-Allow-Origin" "*"}
 
-    [origin false _] {"Access-Control-Allow-Origin" origin}
+    [nil _ _ true]     {"Access-Control-Allow-Origin" "*" "Vary" "Origin"}
+    [nil _ _ false]    {"Access-Control-Allow-Origin" "*"}
 
-    [origin true _]  {"Access-Control-Allow-Origin" origin
-                      "Access-Control-Allow-Credentials" "true"}))
+    [origin _ false _] {"Access-Control-Allow-Origin" origin}
+
+    [origin _ true _]  {"Access-Control-Allow-Origin" origin
+                        "Access-Control-Allow-Credentials" "true"}))
 
 ;; Request -> CorsPolicy -> [:left [ErrorMsg]] | [:right Headers]
 (defn cors-preflight-check-max-age
@@ -116,34 +119,35 @@
                            (cors-failure err-msg)))]
 
     (cond
-     ;;
-     (and allowed-origins
-          (contains? allowed-origins origin))
+      ;;
+      (or (and allowed-origins
+               (contains? allowed-origins origin))
+          (nil? allowed-origins))
 
-     ;; check if it is a preflight request
-     (if (= :options (get req :request-method))
-       (let [e-preflight-headers (cors-preflight-headers req cors-policy)]
-         (match e-preflight-headers
-                [:left err-msg] (fail-or-ignore err-msg)
-                [:right preflight-headers]
-                {:status 204
-                 :headers (merge common-headers preflight-headers)
-                 :body ""}))
-       ;; else
-       (let [control-expose-headers
-             (if-let [exposed-headers (:exposed-headers cors-policy)]
-               {"Access-Control-Expose-Headers" (str/join ", " exposed-headers)}
-               {})
+      ;; check if it is a preflight request
+      (if (= :options (get req :request-method))
+        (let [e-preflight-headers (cors-preflight-headers req cors-policy)]
+          (match e-preflight-headers
+                 [:left err-msg] (fail-or-ignore err-msg)
+                 [:right preflight-headers]
+                 {:status 204
+                  :headers (merge common-headers preflight-headers)
+                  :body ""}))
+        ;; else
+        (let [control-expose-headers
+              (if-let [exposed-headers (:exposed-headers cors-policy)]
+                {"Access-Control-Expose-Headers" (str/join ", " exposed-headers)}
+                {})
 
-             all-headers
-             (merge common-headers control-expose-headers)
+              all-headers
+              (merge common-headers control-expose-headers)
 
-             resp (app req)]
-         (update-in resp [:headers] merge all-headers)))
+              resp (app req)]
+          (update-in resp [:headers] merge all-headers)))
 
-     ;;
-     :else
-     (fail-or-ignore (str "Unsupported origin: " (pr-str origin))))))
+      ;;
+      :else
+      (fail-or-ignore (str "Unsupported origin: " (pr-str origin))))))
 
 
 (defn wrap-cors [app cors-policy]
