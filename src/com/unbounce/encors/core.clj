@@ -14,14 +14,19 @@
 
 ;; Origin -> CorsPolicy -> Headers
 (defn cors-common-headers [origin cors-policy]
-  (match [origin (:allow-credentials? cors-policy) (:origin-varies? cors-policy)]
-    [nil _ true]     {"Access-Control-Allow-Origin" "*" "Vary" "Origin"}
-    [nil _ false]    {"Access-Control-Allow-Origin" "*"}
-
-    [origin false _] {"Access-Control-Allow-Origin" origin}
-
-    [origin true _]  {"Access-Control-Allow-Origin" origin
-                      "Access-Control-Allow-Credentials" "true"}))
+  (if (or (nil? origin)
+          (nil? (:allowed-origins cors-policy)))
+    ;; ^ At this point we already validated all cases where either
+    ;; of this two being nil is an *error*
+    (merge {"Access-Control-Allow-Origin" "*"}
+           (if (:origin-varies? cors-policy)
+             {"Vary" "Origin"}
+             {}))
+    ;; else
+    (merge {"Access-Control-Allow-Origin" origin}
+           (if (:allow-credentials? cors-policy)
+             {"Access-Control-Allow-Credentials" "true"}
+             {}))))
 
 ;; Request -> CorsPolicy -> [:left [ErrorMsg]] | [:right Headers]
 (defn cors-preflight-check-max-age
@@ -116,34 +121,35 @@
                            (cors-failure err-msg)))]
 
     (cond
-     ;;
-     (and allowed-origins
-          (contains? allowed-origins origin))
+      ;;
+      (or (and allowed-origins
+               (contains? allowed-origins origin))
+          (nil? allowed-origins))
 
-     ;; check if it is a preflight request
-     (if (= :options (get req :request-method))
-       (let [e-preflight-headers (cors-preflight-headers req cors-policy)]
-         (match e-preflight-headers
-                [:left err-msg] (fail-or-ignore err-msg)
-                [:right preflight-headers]
-                {:status 204
-                 :headers (merge common-headers preflight-headers)
-                 :body ""}))
-       ;; else
-       (let [control-expose-headers
-             (if-let [exposed-headers (:exposed-headers cors-policy)]
-               {"Access-Control-Expose-Headers" (str/join ", " exposed-headers)}
-               {})
+      ;; check if it is a preflight request
+      (if (= :options (get req :request-method))
+        (let [e-preflight-headers (cors-preflight-headers req cors-policy)]
+          (match e-preflight-headers
+                 [:left err-msg] (fail-or-ignore err-msg)
+                 [:right preflight-headers]
+                 {:status 204
+                  :headers (merge common-headers preflight-headers)
+                  :body ""}))
+        ;; else
+        (let [control-expose-headers
+              (if-let [exposed-headers (:exposed-headers cors-policy)]
+                {"Access-Control-Expose-Headers" (str/join ", " exposed-headers)}
+                {})
 
-             all-headers
-             (merge common-headers control-expose-headers)
+              all-headers
+              (merge common-headers control-expose-headers)
 
-             resp (app req)]
-         (update-in resp [:headers] merge all-headers)))
+              resp (app req)]
+          (update-in resp [:headers] merge all-headers)))
 
-     ;;
-     :else
-     (fail-or-ignore (str "Unsupported origin: " (pr-str origin))))))
+      ;;
+      :else
+      (fail-or-ignore (str "Unsupported origin: " (pr-str origin))))))
 
 
 (defn wrap-cors [app cors-policy]
@@ -153,16 +159,17 @@
           origin          (get (:headers req) "origin")]
 
       (cond
-       ;; halt & fail
-       (and (nil? origin) (:require-origin? cors-policy))
-       (cors-failure "Origin header is missing")
+        ;; halt & fail
+        (and (nil? origin)
+             (:require-origin? cors-policy))
+        (cors-failure "Origin header is missing")
 
-       ;; continue with inner app
-       (nil? origin)
-       (app req)
+        ;; continue with inner app
+        (nil? origin)
+        (app req)
 
-       :else ;; perform cors validation
-       (apply-cors-policy {:req req
-                           :app app
-                           :origin origin
-                           :cors-policy cors-policy})))))
+        :else ;; perform cors validation
+        (apply-cors-policy {:req req
+                            :app app
+                            :origin origin
+                            :cors-policy cors-policy})))))

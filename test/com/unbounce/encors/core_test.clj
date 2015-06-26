@@ -123,3 +123,16 @@
                                    types/simple-headers-wo-content-type))
                       "Access-Control-Allow-Methods" "GET, HEAD, POST"
                       "Access-Control-Max-Age" "365"}])))))
+
+(deftest apply-cors-policy-test
+  (testing ":allowed-origins has a nil value"
+    (let [policy (merge default-cors-options
+                        {:allowed-origins nil
+                         :origin-varies? false})
+          response (apply-cors-policy {:req {}
+                                       :app (constantly {:status 200 :headers {} :body "test is alright"})
+                                       :origin "http://foobar.com"
+                                       :cors-policy policy})]
+      (is (= (:status response) 200))
+      (is (= (:headers response) {"Access-Control-Allow-Origin" "*"}))
+      (is (= (:body response) "test is alright")))))
