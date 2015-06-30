@@ -155,8 +155,7 @@
 (defn wrap-cors [app cors-policy]
   (s/validate types/CorsPolicySchema cors-policy)
   (fn wrap-cors-handler [req]
-    (let [allowed-origins (:allowed-origins cors-policy)
-          origin          (get (:headers req) "origin")]
+    (let [origin (get (:headers req) "origin")]
 
       (cond
         ;; halt & fail
