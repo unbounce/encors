@@ -1,8 +1,13 @@
 (ns com.unbounce.encors.types
   (:require [schema.core :as s]))
 
+(def match-origin :match-origin)
+
+(def star-origin :star-origin)
+
 (def CorsPolicySchema
-  {(s/required-key :allowed-origins)    (s/maybe #{s/Str})
+  {(s/required-key :allowed-origins)    (s/either #{s/Str}
+                                                  (s/enum match-origin star-origin))
    (s/required-key :allowed-methods)    #{(s/enum :head :options :get
                                                   :post :put :delete :patch :trace)}
    (s/required-key :request-headers)    #{s/Str}

@@ -28,9 +28,10 @@ Receives 2 arguments:
   - `:allowed-origins`
 
     A set that specifies which origins are allowed by the
-    middleware. A value of nil indicates unrestricted cross-origin
+    middleware. A value of `:star-origin` indicates unrestricted cross-origin
     sharing and results in `*` as value for the
     `Access-Control-Allow-Origin` HTTP response header.
+    A value of `:match-origin` will always return the incoming origin header.
 
   - `:allowed-methods`
 
