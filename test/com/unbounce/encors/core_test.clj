@@ -125,9 +125,20 @@
                       "Access-Control-Max-Age" "365"}])))))
 
 (deftest apply-cors-policy-test
-  (testing ":allowed-origins has a nil value"
+  (testing ":allowed-origins has a :star-origin value"
     (let [policy (merge default-cors-options
-                        {:allowed-origins nil
+                        {:allowed-origins types/star-origin
+                         :origin-varies? false})
+          response (apply-cors-policy {:req {}
+                                       :app (constantly {:status 200 :headers {} :body "test is alright"})
+                                       :origin nil
+                                       :cors-policy policy})]
+      (is (= (:status response) 200))
+      (is (= (:headers response) {"Access-Control-Allow-Origin" "*"}))
+      (is (= (:body response) "test is alright"))))
+  (testing ":allowed-origins has a :star-origin value"
+    (let [policy (merge default-cors-options
+                        {:allowed-origins types/star-origin
                          :origin-varies? false})
           response (apply-cors-policy {:req {}
                                        :app (constantly {:status 200 :headers {} :body "test is alright"})
@@ -135,4 +146,15 @@
                                        :cors-policy policy})]
       (is (= (:status response) 200))
       (is (= (:headers response) {"Access-Control-Allow-Origin" "*"}))
+      (is (= (:body response) "test is alright"))))
+  (testing ":allowed-origins has a :match-origin value"
+    (let [policy (merge default-cors-options
+                        {:allowed-origins types/match-origin
+                         :origin-varies? false})
+          response (apply-cors-policy {:req {}
+                                       :app (constantly {:status 200 :headers {} :body "test is alright"})
+                                       :origin "http://foobar.com"
+                                       :cors-policy policy})]
+      (is (= (:status response) 200))
+      (is (= (:headers response) {"Access-Control-Allow-Origin" "http://foobar.com"}))
       (is (= (:body response) "test is alright")))))

@@ -15,7 +15,7 @@
 ;; Origin -> CorsPolicy -> Headers
 (defn cors-common-headers [origin cors-policy]
   (if (or (nil? origin)
-          (nil? (:allowed-origins cors-policy)))
+          (= (:allowed-origins cors-policy) types/star-origin))
     ;; ^ At this point we already validated all cases where either
     ;; of this two being nil is an *error*
     (merge {"Access-Control-Allow-Origin" "*"}
@@ -122,9 +122,10 @@
 
     (cond
       ;;
-      (or (and allowed-origins
-               (contains? allowed-origins origin))
-          (nil? allowed-origins))
+      (or
+       (= allowed-origins types/match-origin)
+       (= allowed-origins types/star-origin)
+       (contains? allowed-origins origin))
 
       ;; check if it is a preflight request
       (if (= :options (get req :request-method))
