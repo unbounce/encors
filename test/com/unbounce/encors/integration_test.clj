@@ -49,7 +49,7 @@
 (def ^:const allowed-methods "GET, HEAD, PATCH, POST")
 (def ^:const allowed-headers "Content-Type, X-Allowed")
 (def ^:const active-allowed-headers
-  "Accept-Language, Content-Language, Content-Type, Accept, X-Allowed")
+  "Origin, Accept-Language, Content-Language, Content-Type, Accept, X-Allowed")
 (def ^:const expose-headers  "X-Safe-To-Expose, X-Safe-To-Expose-Too")
 (def ^:const unallowed-origin "not.cool.io")
 

@@ -21,6 +21,6 @@
 
 (def simple-methods #{:get :head :post})
 
-(def simple-headers #{"Accept" "Accept-Language" "Content-Language" "Content-Type"})
+(def simple-headers #{"Accept" "Accept-Language" "Content-Language" "Content-Type" "Origin"})
 
-(def simple-headers-wo-content-type #{"Accept" "Accept-Language" "Content-Language"})
+(def simple-headers-wo-content-type #{"Accept" "Accept-Language" "Content-Language" "Origin"})
