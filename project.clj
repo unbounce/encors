@@ -1,6 +1,6 @@
 (def ring-version "1.3.2")
 
-(defproject com.unbounce/encors "2.2.0"
+(defproject com.unbounce/encors "2.2.1-SNAPSHOT"
   :description "encors is a CORS library for ring"
   :url "https://www.github.com/unbounce/encors"
   :license {:name "The MIT License (MIT)"
