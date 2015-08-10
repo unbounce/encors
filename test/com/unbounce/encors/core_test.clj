@@ -93,7 +93,7 @@
              [:left [(str "HTTP headers requested in Access-Control-Request-Headers of "
                           "CORS request is not supported; requested: "
                           "'X-Not-Safe-To-Expose, X-Blah-Bleh'; "
-                          "supported are 'X-Safe-To-Expose, Accept-Language, "
+                          "supported are 'X-Safe-To-Expose, Origin, Accept-Language, "
                           "Content-Language, Accept'.")]])))
     (testing "Access-Control-Request-Headers match policy request headers"
       (is (= (cors-preflight-check-request-headers
