@@ -21,6 +21,8 @@
 
 (def simple-methods #{:get :head :post})
 
-(def simple-headers #{"Accept" "Accept-Language" "Content-Language" "Content-Type" "Origin"})
-
-(def simple-headers-wo-content-type #{"Accept" "Accept-Language" "Content-Language" "Origin"})
+(def access-control-request-headers-whitelist
+  ;; Only Safari sends these access-control-request-headers on the preflight
+  ;; even though they are considered "simple headers".
+  ;; Note: these *must* be lowercase
+  #{"origin" "accept"})

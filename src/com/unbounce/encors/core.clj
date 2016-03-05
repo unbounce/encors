@@ -80,15 +80,15 @@
 ;; Request -> CorsPolicy -> [:left [ErrorMsg]] | [:right Headers]
 (defn cors-preflight-check-request-headers
   [{:keys [headers] :as req} cors-policy]
-  (let [supported-headers (set/union
-                            (:request-headers cors-policy)
-                            types/simple-headers-wo-content-type)
+  (let [supported-headers (:request-headers cors-policy)
         supported-headers* (into
                              (sorted-set)
                              (map str/lower-case supported-headers))
         supported-headers-str (str/join ", " supported-headers)
         control-req-headers-str (get headers "access-control-request-headers")
-        control-req-headers (header-string-to-set control-req-headers-str)]
+        control-req-headers (set/difference
+                              (header-string-to-set control-req-headers-str)
+                              types/access-control-request-headers-whitelist)]
 
     (if (or (empty? control-req-headers)
             (set/subset? control-req-headers supported-headers*))
