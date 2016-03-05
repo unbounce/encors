@@ -6,8 +6,9 @@
 (def star-origin :star-origin)
 
 (def CorsPolicySchema
-  {(s/required-key :allowed-origins)    (s/either #{s/Str}
-                                                  (s/enum match-origin star-origin))
+  {(s/required-key :allowed-origins)    (s/conditional
+                                          keyword? (s/enum match-origin star-origin)
+                                          set? #{s/Str})
    (s/required-key :allowed-methods)    #{(s/enum :head :options :get
                                                   :post :put :delete :patch :trace)}
    (s/required-key :request-headers)    #{s/Str}
