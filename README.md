@@ -14,7 +14,8 @@ Yet again another [CORS](http://www.w3.org/TR/cors/) library for ring.
 
 ## Usage
 
-Add CORS support to ring apps, this middleware provides:
+Add CORS support to ring apps, supporting both synchronous and asynchronous
+([aleph](https://github.com/ztellman/aleph)) handlers.
 
 ### `wrap-cors`
 
@@ -117,8 +118,15 @@ Example:
 (def app (wrap-cors raw-app cors-policy))
 ```
 
+### `com.unbounce.encors.aleph/wrap-cors`
+
+Same as `wrap-cors`, but supports aleph's deferred responses.
+
+NOTE: This is only avaiable if you have
+[ztellman/aleph](https://github.com/ztellman/aleph) on the classpath.
+
 ## License
 
-Copyright © 2014-2015 Unbounce Marketing Solutions Inc.
+Copyright © 2014-2016 Unbounce Marketing Solutions Inc.
 
 Distributed under the [MIT License (MIT)](http://opensource.org/licenses/MIT).
