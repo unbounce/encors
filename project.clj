@@ -17,7 +17,7 @@
   ; set to true to have verbose debug of integration tests
   :jvm-opts ["-Ddebug=false"]
 
-  :eastwood {:exclude-namespaces [com.unbounce.encors]}
+  :eastwood {:exclude-linters [:constant-test]}
 
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [potemkin "0.4.3"]
