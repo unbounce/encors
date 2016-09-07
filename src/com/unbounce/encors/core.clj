@@ -4,7 +4,6 @@
    [clojure.set :as set]
    [clojure.core.match :refer [match]]
    [schema.core :as s]
-
    [com.unbounce.encors.types :as types]))
 
 (defn cors-failure [err-msg]
@@ -112,7 +111,10 @@
              cors-preflight-check-method
              cors-preflight-check-request-headers])))
 
-(defn apply-cors-policy [{:keys [req app origin cors-policy]}]
+(defn apply-ring-headers [response headers]
+  (update-in response [:headers] merge headers))
+
+(defn apply-cors-policy [{:keys [req app origin cors-policy apply-headers]}]
   (let [allowed-origins (:allowed-origins cors-policy)
         common-headers (cors-common-headers origin cors-policy)
         fail-or-ignore (fn fail [err-msg]
@@ -143,17 +145,15 @@
                 {})
 
               all-headers
-              (merge common-headers control-expose-headers)
-
-              resp (app req)]
-          (update-in resp [:headers] merge all-headers)))
+              (merge common-headers control-expose-headers)]
+          (apply-headers (app req) all-headers)))
 
       ;;
       :else
       (fail-or-ignore (str "Unsupported origin: " (pr-str origin))))))
 
-
-(defn wrap-cors [app cors-policy]
+(defn build-cors-wrapper
+  [app cors-policy apply-headers]
   (s/validate types/CorsPolicySchema cors-policy)
   (fn wrap-cors-handler [req]
     (let [origin (get (:headers req) "origin")]
@@ -171,5 +171,14 @@
         :else ;; perform cors validation
         (apply-cors-policy {:req req
                             :app app
+                            :apply-headers apply-headers
                             :origin origin
                             :cors-policy cors-policy})))))
+
+(defn wrap-cors
+  "CORS Middleware for standard ring applications.
+
+  See com.unbounce.encors.types for schema definition of cors-policy
+  "
+  [handler cors-policy]
+  (build-cors-wrapper handler cors-policy apply-ring-headers))

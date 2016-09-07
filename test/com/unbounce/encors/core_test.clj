@@ -131,6 +131,7 @@
                          :origin-varies? false})
           response (apply-cors-policy {:req {}
                                        :app (constantly {:status 200 :headers {} :body "test is alright"})
+                                       :apply-headers apply-ring-headers
                                        :origin nil
                                        :cors-policy policy})]
       (is (= (:status response) 200))
@@ -142,6 +143,7 @@
                          :origin-varies? false})
           response (apply-cors-policy {:req {}
                                        :app (constantly {:status 200 :headers {} :body "test is alright"})
+                                       :apply-headers apply-ring-headers
                                        :origin "http://foobar.com"
                                        :cors-policy policy})]
       (is (= (:status response) 200))
@@ -153,6 +155,7 @@
                          :origin-varies? false})
           response (apply-cors-policy {:req {}
                                        :app (constantly {:status 200 :headers {} :body "test is alright"})
+                                       :apply-headers apply-ring-headers
                                        :origin "http://foobar.com"
                                        :cors-policy policy})]
       (is (= (:status response) 200))
