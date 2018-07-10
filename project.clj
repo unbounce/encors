@@ -20,4 +20,5 @@
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [potemkin "0.4.5"]
                  [org.clojure/core.match "0.3.0-alpha5"]
-                 [prismatic/schema "1.1.9"]])
+                 [prismatic/schema "1.1.9"]]
+  :deploy-repositories {"releases" {:url "https://repo.clojars.org" :creds :gpg}})
