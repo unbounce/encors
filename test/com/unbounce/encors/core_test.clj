@@ -93,17 +93,13 @@
              [:left [(str "HTTP headers requested in Access-Control-Request-Headers of "
                           "CORS request is not supported; requested: "
                           "'X-Not-Safe-To-Expose, X-Blah-Bleh'; "
-                          "supported are 'X-Safe-To-Expose, Origin, Accept-Language, "
-                          "Content-Language, Accept'.")]])))
+                          "supported are 'X-Safe-To-Expose'.")]])))
     (testing "Access-Control-Request-Headers match policy request headers"
       (is (= (cors-preflight-check-request-headers
               {:headers {"access-control-request-headers"
                          "X-Safe-To-Expose"}}
               policy)
-             [:right {"Access-Control-Allow-Headers"
-                      (str/join ", "
-                        (set/union #{"X-Safe-To-Expose"}
-                                   types/simple-headers-wo-content-type))}])))))
+             [:right {"Access-Control-Allow-Headers" "X-Safe-To-Expose"}])))))
 
 (deftest cors-preflight-headers-test
   (testing "With a request that complies with policy"
@@ -117,12 +113,25 @@
                                                 "access-control-request-method"
                                                 "GET"}}
                                      policy)
-             [:right {"Access-Control-Allow-Headers"
-                      (str/join ", "
-                        (set/union #{"X-Cool-Header"}
-                                   types/simple-headers-wo-content-type))
+             [:right {"Access-Control-Allow-Headers" "X-Cool-Header"
                       "Access-Control-Allow-Methods" "GET, HEAD, POST"
                       "Access-Control-Max-Age" "365"}])))))
+
+(deftest cors-whitelisted-headers-test
+  (testing "With a request that contains whitelisted headers."
+    (let [policy (merge default-cors-options
+                   {:max-age 365
+                    :allow-credentials? true
+                    :allowed-methods #{:get}})]
+      (is (= (cors-preflight-headers {:headers {"access-control-request-headers"
+                                                "Origin, Accept"
+                                                "access-control-request-method"
+                                                "GET"}}
+               policy)
+             [:right {"Access-Control-Allow-Headers" ""
+                      "Access-Control-Allow-Methods" "GET, HEAD, POST"
+                      "Access-Control-Max-Age" "365"}])))))
+
 
 (deftest apply-cors-policy-test
   (testing ":allowed-origins has a :star-origin value"
