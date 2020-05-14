@@ -1,2 +1,9 @@
 language: clojure
-script: lein do clean, kibit, eastwood, test, jar
+script:
+  - lein do kibit, eastwood
+  - lein all do clean, test
+jdk:
+  - openjdk8
+  - openjdk9
+  - openjdk10
+  - openjdk11
