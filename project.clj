@@ -3,7 +3,7 @@
   :url "https://www.github.com/unbounce/encors"
   :license {:name "The MIT License (MIT)"
             :url "http://opensource.org/licenses/MIT"
-            :comments "Copyright (c) 2014-2018 Unbounce Marketing Solutions Inc."}
+            :comments "Copyright (c) 2014-2020 Unbounce Marketing Solutions Inc."}
 
   :profiles {:dev {:plugins [[lein-kibit "0.1.2"]
                              [jonase/eastwood "0.2.3"]]

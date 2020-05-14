@@ -127,6 +127,6 @@ NOTE: This is only avaiable if you have
 
 ## License
 
-Copyright © 2014-2016 Unbounce Marketing Solutions Inc.
+Copyright © 2014-2020 Unbounce Marketing Solutions Inc.
 
 Distributed under the [MIT License (MIT)](http://opensource.org/licenses/MIT).
